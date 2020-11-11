@@ -1,4 +1,4 @@
-# BotSupportBot
+# Sonic49's Bot Support Bot
 
 A bot for Sonic49's Bot Support, a place to get help about my or any other Discord bots ([invite link](https://discord.gg/NSdetwGjpK)).
 
