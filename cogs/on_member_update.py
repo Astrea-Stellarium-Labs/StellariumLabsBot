@@ -7,12 +7,16 @@ class MemberUpdate(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-        if self.bot.sonic_bot_role in before.roles and before.raw_status != after.raw_status:
+        if self.bot.sonic_bot_role in before.roles:
             status_chan = self.bot.get_channel(776114750064951296)
 
-            if after.raw_status == "offline":
-                await status_chan.send(f"{after.mention} is offline. Please wait; it will be back up soon.")
-            elif after.raw_status == "online":
+            if before.raw_status != after.raw_status and after.raw_status == "offline":
+                await status_chan.send(f"{after.mention} is offline. Please wait - this tends to happen semi-frequently" +
+                ", and the bot will come back up soon automatically.")
+
+            elif before.activities != after.activities and after.activities != ():
+                # this more or less checks if a bot actually has an activity, which bots like
+                # Seraphim will have only when they are done
                 await status_chan.send(f"{after.mention} is back online.")
 
 def setup(bot):
