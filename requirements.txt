@@ -1,0 +1,4 @@
+dis-snek==8.0.0
+molter==0.11.0
+python-dotenv==0.20.0
+humanize==4.0.0

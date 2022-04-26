@@ -1,105 +1,168 @@
-from discord.ext import commands
-import discord, traceback, os
-from datetime import datetime
+import asyncio
+import logging
+import os
+from collections import defaultdict
 
-from keep_alive import keep_alive
+import dis_snek
+import molter
+from dotenv import load_dotenv
 
-def error_format(error):
-    # simple function that formats an exception
-    return ''.join(traceback.format_exception(etype=type(error), value=error, tb=error.__traceback__))
+import common.utils as utils
 
-def string_split(string):
-    # simple function that splits a string into 1950-character parts
-    return [string[i:i+1950] for i in range(0, len(string), 1950)]
-
-async def proper_permissions(ctx):
-    # checks if author has admin or manage guild perms or is the owner
-    permissions = ctx.author.guild_permissions
-    return (permissions.administrator or permissions.manage_guild
-    or ctx.guild.owner.id == ctx.author.id)
-
-async def error_handle(bot, error, ctx = None):
-    # handles errors and sends them to owner
-    error_str = error_format(error)
-
-    await msg_to_owner(bot, error_str)
-
-    if ctx != None:
-        await ctx.send("An internal error has occured. The bot owner has been notified.")
-
-async def msg_to_owner(bot, content):
-    # sends a message to the owner
-    owner = bot.owner
-    string = str(content)
-
-    str_chunks = string_split(string)
-
-    for chunk in str_chunks:
-        await owner.send(f"{chunk}")
+load_dotenv()
 
 
-# we're going to use all intents for laziness purposes
-# we could reasonably turn some of these off, but this bot is too small to really matter much
-bot = commands.Bot(command_prefix='sp!', fetch_offline_members=True, intents=discord.Intents.all())
-bot.remove_command("help")
+logger = logging.getLogger("dis.snek")
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(
+    filename=os.environ.get("LOG_FILE_PATH"), encoding="utf-8", mode="a"
+)
+handler.setFormatter(
+    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+)
+logger.addHandler(handler)
 
-@bot.event
-async def on_ready():
-    if bot.init_load == True:
-        cogs_list = ("cogs.eval_cmd", "cogs.on_member_update")
-        for cog in cogs_list:
-            bot.load_extension(cog)
 
-        print('Logged in as')
-        print(bot.user.name)
-        print(bot.user.id)
-        print('------\n')
+async def generate_prefixes(bot: dis_snek.Snake, msg: dis_snek.Message):
+    # here for future-proofing
+    mention_prefixes = {f"<@{bot.user.id}> ", f"<@!{bot.user.id}> "}
+    custom_prefixes = {"g!"}
+    return mention_prefixes.union(custom_prefixes)
 
-        activity = discord.Activity(name = 'over Sonic49\'s Bot Support', type = discord.ActivityType.watching)
-        await bot.change_presence(activity = activity)
 
-        guild = bot.get_guild(775912554928144384)
-        bot.sonic_bot_role = guild.get_role(775913721092374528)
+class AstreasGalaxyBot(molter.MolterSnake):
+    @dis_snek.listen("ready")
+    async def on_ready(self):
+        utcnow = dis_snek.Timestamp.utcnow()
+        time_format = f"<t:{int(utcnow.timestamp())}:f>"
 
-        application = await bot.application_info()
-        bot.owner = application.owner
+        connect_msg = (
+            f"Logged in at {time_format}!"
+            if self.init_load == True
+            else f"Reconnected at {time_format}!"
+        )
 
-    utcnow = datetime.utcnow()
-    time_format = utcnow.strftime("%x %X UTC")
+        await self.owner.send(connect_msg)
 
-    connect_str = "Connected" if bot.init_load else "Reconnected"
+        self.init_load = False
 
-    await msg_to_owner(bot, f"{connect_str} at `{time_format}`!")
+        activity = dis_snek.Activity.create(
+            name="over Astrea's Galaxy", type=dis_snek.ActivityType.WATCHING
+        )
 
-    bot.init_load = False
+        await self.change_presence(activity=activity)
 
-@bot.check
-async def block_dms(ctx):
-    return ctx.guild is not None
+    @dis_snek.listen("resume")
+    async def on_resume(self):
+        activity = dis_snek.Activity.create(
+            name="over Astrea's Galaxy", type=dis_snek.ActivityType.WATCHING
+        )
+        await self.change_presence(activity=activity)
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandInvokeError):
-        original = error.original
-        if not isinstance(original, discord.HTTPException):
-            await error_handle(bot, error, ctx)
-    elif isinstance(error, (commands.ConversionError, commands.UserInputError, commands.CommandOnCooldown)):
-        await ctx.send(error)
-    elif isinstance(error, commands.CheckFailure):
-        if ctx.guild != None:
-            await ctx.send("You do not have the proper permissions to use that command.")
-    elif isinstance(error, commands.CommandNotFound):
-        return
-    else:
-        await error_handle(bot, error, ctx)
+    @dis_snek.listen("message_create")
+    async def _dispatch_msg_commands(self, event: dis_snek.events.MessageCreate):
+        """Determine if a command is being triggered, and dispatch it.
+        Annoyingly, unlike d.py, we have to overwrite this whole method
+        in order to provide the 'replace _ with -' trick that was in the
+        d.py version."""
 
-@bot.event
-async def on_error(event, *args, **kwargs):
-    try:
-        raise
-    except Exception as e:
-        await error_handle(bot, e)
+        message = event.message
 
-keep_alive()
+        if not message.content:
+            return
+
+        if not message.author.bot:
+            prefixes = await self.generate_prefixes(self, message)
+
+            if isinstance(prefixes, str) or prefixes == dis_snek.MENTION_PREFIX:
+                prefixes = (prefixes,)  # type: ignore
+
+            prefix_used = None
+
+            for prefix in prefixes:
+                if prefix == dis_snek.MENTION_PREFIX:
+                    if mention := self._mention_reg.search(message.content):  # type: ignore
+                        prefix = mention.group()
+                    else:
+                        continue
+
+                if message.content.startswith(prefix):
+                    prefix_used = prefix
+                    break
+
+            if prefix_used:
+                context = await self.get_context(message)
+                context.prefix = prefix_used
+
+                content_parameters = message.content.removeprefix(prefix_used)  # type: ignore
+                command = self
+
+                while True:
+                    first_word: str = get_first_word(content_parameters)  # type: ignore
+                    actual_first_word = (
+                        first_word.replace("-", "_") if first_word else None
+                    )
+
+                    if isinstance(command, molter.MolterCommand):
+                        new_command = command.command_dict.get(actual_first_word)
+                    else:
+                        new_command = command.commands.get(actual_first_word)
+                    if not new_command or not new_command.enabled:
+                        break
+
+                    command = new_command
+                    content_parameters = content_parameters.removeprefix(
+                        first_word
+                    ).strip()
+                    if not isinstance(command, molter.MolterCommand):
+                        # normal message commands can't have subcommands
+                        break
+
+                    if command.command_dict and command.hierarchical_checking:
+                        await new_command._can_run(context)
+
+                if isinstance(command, dis_snek.Snake):
+                    command = None
+
+                if command and command.enabled:
+                    # yeah, this looks ugly
+                    context.command = command
+                    context.invoked_name = (
+                        message.content.removeprefix(prefix_used).removesuffix(content_parameters).strip()  # type: ignore
+                    )
+                    context.args = dis_snek.utils.get_args(context.content_parameters)
+                    try:
+                        if self.pre_run_callback:
+                            await self.pre_run_callback(context)
+                        await self._run_message_command(command, context)
+                        if self.post_run_callback:
+                            await self.post_run_callback(context)
+                    except Exception as e:
+                        await self.on_command_error(context, e)
+                    finally:
+                        await self.on_command(context)
+
+    async def on_error(self, source: str, error: Exception, *args, **kwargs) -> None:
+        await utils.error_handle(self, error)
+
+
+intents = dis_snek.Intents.ALL
+mentions = dis_snek.AllowedMentions.all()
+
+bot = AstreasGalaxyBot(
+    generate_prefixes=generate_prefixes,
+    allowed_mentions=mentions,
+    intents=intents,
+    auto_defer=dis_snek.AutoDefer(enabled=False),  # we already handle deferring
+)
 bot.init_load = True
-bot.run(os.environ.get("MAIN_TOKEN"))
+bot.color = dis_snek.Color(int(os.environ.get("BOT_COLOR")))  # 10129639, aka #9a90e7
+
+cogs_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
+for cog in cogs_list:
+    try:
+        bot.load_extension(cog)
+    except dis_snek.errors.ExtensionLoadException:
+        raise
+
+asyncio.run(bot.astart(os.environ.get("MAIN_TOKEN")))
