@@ -1,5 +1,5 @@
-# Sonic49's Bot Support Bot
+# Astrea's Galaxy Bot
 
-A bot for Sonic49's Bot Support, a place to get help about my or any other Discord bots ([invite link](https://discord.gg/NSdetwGjpK)).
+A bot for Astrea's Galaxy, a place to get help about my Discord bots ([invite link](https://discord.gg/NSdetwGjpK)) as well to hangout if you want to.
 
-Right now, all it does is check if one of my bots goes down or comes back online, and sends a message in a channel about that. It might get an upgrade soon if needed.
+Right now, all it does is check if one of my bots goes down or comes back online, and sends a message in a channel about that. A *lot* more is planned in the future.
