@@ -1,10 +1,9 @@
 import asyncio
 import logging
 import os
-from collections import defaultdict
+import typing
 
 import dis_snek
-import molter
 from dotenv import load_dotenv
 
 import common.utils as utils
@@ -30,7 +29,7 @@ async def generate_prefixes(bot: dis_snek.Snake, msg: dis_snek.Message):
     return mention_prefixes.union(custom_prefixes)
 
 
-class AstreasGalaxyBot(molter.MolterSnake):
+class AstreasGalaxyBot(dis_snek.Snake):
     @dis_snek.listen("ready")
     async def on_ready(self):
         utcnow = dis_snek.Timestamp.utcnow()
@@ -60,7 +59,7 @@ class AstreasGalaxyBot(molter.MolterSnake):
         await self.change_presence(activity=activity)
 
     @dis_snek.listen("message_create")
-    async def _dispatch_msg_commands(self, event: dis_snek.events.MessageCreate):
+    async def _dispatch_prefixed_commands(self, event: dis_snek.events.MessageCreate):
         """Determine if a command is being triggered, and dispatch it.
         Annoyingly, unlike d.py, we have to overwrite this whole method
         in order to provide the 'replace _ with -' trick that was in the
@@ -72,7 +71,9 @@ class AstreasGalaxyBot(molter.MolterSnake):
             return
 
         if not message.author.bot:
-            prefixes = await self.generate_prefixes(self, message)
+            prefixes: str | typing.Iterable[str] = await self.generate_prefixes(
+                self, message
+            )
 
             if isinstance(prefixes, str) or prefixes == dis_snek.MENTION_PREFIX:
                 prefixes = (prefixes,)  # type: ignore
@@ -95,18 +96,14 @@ class AstreasGalaxyBot(molter.MolterSnake):
                 context.prefix = prefix_used
 
                 content_parameters = message.content.removeprefix(prefix_used)  # type: ignore
-                command = self
+                command = self  # yes, this is a hack
 
                 while True:
-                    first_word: str = get_first_word(content_parameters)  # type: ignore
-                    actual_first_word = (
-                        first_word.replace("-", "_") if first_word else None
-                    )
-
-                    if isinstance(command, molter.MolterCommand):
-                        new_command = command.command_dict.get(actual_first_word)
+                    first_word: str = dis_snek.utils.get_first_word(content_parameters)  # type: ignore
+                    if isinstance(command, dis_snek.PrefixedCommand):
+                        new_command = command.subcommands.get(first_word)
                     else:
-                        new_command = command.commands.get(actual_first_word)
+                        new_command = command.prefixed_commands.get(first_word)
                     if not new_command or not new_command.enabled:
                         break
 
@@ -114,27 +111,35 @@ class AstreasGalaxyBot(molter.MolterSnake):
                     content_parameters = content_parameters.removeprefix(
                         first_word
                     ).strip()
-                    if not isinstance(command, molter.MolterCommand):
-                        # normal message commands can't have subcommands
-                        break
 
-                    if command.command_dict and command.hierarchical_checking:
-                        await new_command._can_run(context)
+                    if command.subcommands and command.hierarchical_checking:
+                        try:
+                            await new_command._can_run(
+                                context
+                            )  # will error out if we can't run this command
+                        except Exception as e:
+                            if new_command.error_callback:
+                                await new_command.error_callback(e, context)
+                            elif new_command.scale and new_command.scale.scale_error:
+                                await new_command.scale.scale_error(context)
+                            else:
+                                await self.on_command_error(context, e)
+                            return
 
-                if isinstance(command, dis_snek.Snake):
+                if not isinstance(command, dis_snek.PrefixedCommand):
                     command = None
 
                 if command and command.enabled:
                     # yeah, this looks ugly
                     context.command = command
-                    context.invoked_name = (
+                    context.invoke_target = (
                         message.content.removeprefix(prefix_used).removesuffix(content_parameters).strip()  # type: ignore
                     )
                     context.args = dis_snek.utils.get_args(context.content_parameters)
                     try:
                         if self.pre_run_callback:
                             await self.pre_run_callback(context)
-                        await self._run_message_command(command, context)
+                        await self._run_prefixed_command(command, context)
                         if self.post_run_callback:
                             await self.post_run_callback(context)
                     except Exception as e:

@@ -7,11 +7,10 @@ from pathlib import Path
 
 import aiohttp
 import dis_snek
-import molter
 
 
 def proper_permissions() -> typing.Any:
-    async def predicate(ctx: dis_snek.MessageContext):
+    async def predicate(ctx: dis_snek.PrefixedContext):
         return ctx.author.has_permission(
             dis_snek.Permissions.ADMINISTRATOR, dis_snek.Permissions.MANAGE_GUILD
         )
@@ -45,7 +44,7 @@ async def error_handle(
     await msg_to_owner(bot, to_send, split)
 
     if ctx:
-        if isinstance(ctx, dis_snek.MessageContext):
+        if isinstance(ctx, dis_snek.PrefixedContext):
             await ctx.reply(
                 "An internal error has occured. The bot owner has been notified."
             )
@@ -157,7 +156,7 @@ def yesno_friendly_str(bool_to_convert):
     return "yes" if bool_to_convert == True else "no"
 
 
-def role_check(ctx: dis_snek.MessageContext, role: dis_snek.Role):
+def role_check(ctx: dis_snek.PrefixedContext, role: dis_snek.Role):
     top_role = ctx.guild.me.top_role
 
     if role.position > top_role.position:
@@ -168,7 +167,7 @@ def role_check(ctx: dis_snek.MessageContext, role: dis_snek.Role):
         )
 
 
-class CustomCheckFailure(molter.BadArgument):
+class CustomCheckFailure(dis_snek.errors.BadArgument):
     # custom classs for custom prerequisite failures outside of normal command checks
     pass
 
@@ -177,7 +176,7 @@ async def _global_checks(ctx: dis_snek.Context):
     return bool(ctx.guild) if ctx.bot.is_ready else False
 
 
-class Scale(molter.MolterScale):
+class Scale(dis_snek.Scale):
     def __new__(cls, bot: dis_snek.Snake, *args, **kwargs):
         new_cls = super().__new__(cls, bot, *args, **kwargs)
         new_cls.add_scale_check(_global_checks)

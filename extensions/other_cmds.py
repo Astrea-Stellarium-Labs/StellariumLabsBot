@@ -1,7 +1,7 @@
 import importlib
 import time
 
-import molter
+import dis_snek
 
 import common.utils as utils
 
@@ -11,7 +11,7 @@ class OtherCMDs(utils.Scale):
         self.display_name = "Other"
         self.bot = bot
 
-    @molter.msg_command()
+    @dis_snek.prefixed_command()
     async def ping(self, ctx):
         """Pings the bot. Great way of finding out if the bot’s working correctly, but otherwise has no real use."""
 

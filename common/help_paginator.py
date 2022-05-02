@@ -101,7 +101,7 @@ class HelpPaginator(paginators.Paginator):
             "components": [c.to_dict() for c in self.create_components()],
         }
 
-    async def send(self, ctx: dis_snek.MessageContext) -> dis_snek.Message:
+    async def send(self, ctx: dis_snek.PrefixedContext) -> dis_snek.Message:
         """
         Send this paginator.
 

@@ -4,7 +4,6 @@ import importlib
 
 import dis_snek
 import humanize
-import molter
 
 import common.utils as utils
 
@@ -20,7 +19,7 @@ class OnCMDError(dis_snek.Scale):
     async def on_command_error(
         self, ctx: dis_snek.Context, error: Exception, *args, **kwargs
     ):
-        if not ctx.bot.is_ready or not isinstance(ctx, dis_snek.MessageContext):
+        if not ctx.bot.is_ready or not isinstance(ctx, dis_snek.PrefixedContext):
             return
 
         if isinstance(error, dis_snek.errors.CommandOnCooldown):
@@ -34,7 +33,7 @@ class OnCMDError(dis_snek.Scale):
             )
         elif isinstance(
             error,
-            molter.BadArgument,
+            dis_snek.errors.BadArgument,
         ):
             await ctx.reply(embed=self.error_embed_generate(str(error)))
         elif isinstance(error, utils.CustomCheckFailure):

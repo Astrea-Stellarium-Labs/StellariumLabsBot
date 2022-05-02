@@ -1,4 +1,3 @@
-dis-snek==8.0.0
-molter==0.11.0
+git+https://github.com/Discord-Snake-Pit/Dis-Snek.git@ea65bf79d0fcad22b26544d228f2ef698cf88a68
 python-dotenv==0.20.0
 humanize==4.0.0

@@ -8,7 +8,6 @@ import traceback
 import typing
 
 import dis_snek
-import molter
 from dis_snek.ext import paginators
 from dis_snek.ext.debug_scale.utils import debug_embed
 from dis_snek.ext.debug_scale.utils import get_cache_state
@@ -16,15 +15,15 @@ from dis_snek.ext.debug_scale.utils import get_cache_state
 log = logging.getLogger(dis_snek.const.logger_name)
 
 
-class DebugScale(molter.MolterScale):
+class DebugScale(dis_snek.Scale):
     """A reimplementation of dis_snek's native debug commands."""
 
     def __init__(self, bot):
         self.display_name = "Debug"
         self.add_scale_check(dis_snek.checks.is_owner())
 
-    @molter.msg_command(aliases=["jsk"])
-    async def debug(self, ctx: dis_snek.MessageContext):
+    @dis_snek.prefixed_command(aliases=["jsk"])
+    async def debug(self, ctx: dis_snek.PrefixedContext):
         """Get basic information about the bot."""
         uptime = dis_snek.Timestamp.fromdatetime(self.bot.start_time)
         e = debug_embed("General")
@@ -52,7 +51,7 @@ class DebugScale(molter.MolterScale):
         await ctx.reply(embeds=[e])
 
     @debug.subcommand(aliases=["cache"])
-    async def cache_info(self, ctx: dis_snek.MessageContext):
+    async def cache_info(self, ctx: dis_snek.PrefixedContext):
         """Get information about the current cache state."""
         e = debug_embed("Cache")
 
@@ -60,13 +59,13 @@ class DebugScale(molter.MolterScale):
         await ctx.reply(embeds=[e])
 
     @debug.subcommand()
-    async def shutdown(self, ctx: dis_snek.MessageContext) -> None:
+    async def shutdown(self, ctx: dis_snek.PrefixedContext) -> None:
         """Shuts down the bot."""
         await ctx.reply("Shutting down 😴")
         await self.bot.stop()
 
     @debug.subcommand(aliases=["reload"])
-    async def regrow(self, ctx: dis_snek.MessageContext, *, module: str):
+    async def regrow(self, ctx: dis_snek.PrefixedContext, *, module: str):
         """Regrows a scale."""
         with contextlib.suppress(
             dis_snek.errors.ExtensionLoadException, dis_snek.errors.ScaleLoadException
@@ -75,13 +74,13 @@ class DebugScale(molter.MolterScale):
         await self.grow_scale.callback(ctx, module=module)
 
     @debug.subcommand(aliases=["load"])
-    async def grow_scale(self, ctx: dis_snek.MessageContext, *, module: str):
+    async def grow_scale(self, ctx: dis_snek.PrefixedContext, *, module: str):
         """Grows a scale."""
         self.bot.grow_scale(module)
         await ctx.message.add_reaction("🪴")
 
     @debug.subcommand(aliases=["unload"])
-    async def shed_scale(self, ctx: dis_snek.MessageContext, *, module: str) -> None:
+    async def shed_scale(self, ctx: dis_snek.PrefixedContext, *, module: str) -> None:
         """Sheds a scale."""
         self.bot.shed_scale(module)
         await ctx.message.add_reaction("💥")
@@ -89,7 +88,9 @@ class DebugScale(molter.MolterScale):
     @regrow.error
     @grow_scale.error
     @shed_scale.error
-    async def regrow_error(self, error: Exception, ctx: dis_snek.MessageContext, *args):
+    async def regrow_error(
+        self, error: Exception, ctx: dis_snek.PrefixedContext, *args
+    ):
         if isinstance(error, dis_snek.errors.CommandCheckFailure):
             return await ctx.reply("You do not have permission to execute this command")
         elif isinstance(error, dis_snek.errors.ExtensionLoadException):
@@ -97,7 +98,7 @@ class DebugScale(molter.MolterScale):
         raise
 
     @debug.subcommand(aliases=["python", "exc"])
-    async def exec(self, ctx: dis_snek.MessageContext, *, body: str):
+    async def exec(self, ctx: dis_snek.PrefixedContext, *, body: str):
         """Direct evaluation of Python code."""
         await ctx.channel.trigger_typing()
         env = {
@@ -136,7 +137,7 @@ class DebugScale(molter.MolterScale):
             return await self.handle_exec_result(ctx, ret, stdout.getvalue())
 
     async def handle_exec_result(
-        self, ctx: dis_snek.MessageContext, result: typing.Any, value: typing.Any
+        self, ctx: dis_snek.PrefixedContext, result: typing.Any, value: typing.Any
     ):
         if not result:
             result = value or "No Output!"
@@ -191,7 +192,7 @@ class DebugScale(molter.MolterScale):
         return await paginator.send(ctx)
 
     @debug.subcommand()
-    async def shell(self, ctx: dis_snek.MessageContext, *, cmd: str):
+    async def shell(self, ctx: dis_snek.PrefixedContext, *, cmd: str):
         """Executes statements in the system shell."""
         await ctx.channel.trigger_typing()
 
@@ -212,12 +213,12 @@ class DebugScale(molter.MolterScale):
         return await paginator.send(ctx)
 
     @debug.subcommand()
-    async def git(self, ctx: dis_snek.MessageContext, *, cmd: str):
+    async def git(self, ctx: dis_snek.PrefixedContext, *, cmd: str):
         """Shortcut for 'debug shell git'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"git {cmd}")
 
     @debug.subcommand()
-    async def pip(self, ctx: dis_snek.MessageContext, *, cmd: str):
+    async def pip(self, ctx: dis_snek.PrefixedContext, *, cmd: str):
         """Shortcut for 'debug shell pip'. Invokes the system shell."""
         await self.shell.callback(ctx, cmd=f"pip {cmd}")
 
