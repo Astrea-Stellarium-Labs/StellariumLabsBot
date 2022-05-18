@@ -1,4 +1,8 @@
+import importlib
+
 import dis_snek
+
+import common.utils as utils
 
 
 class MemberUpdate(dis_snek.Scale):
@@ -13,7 +17,9 @@ class MemberUpdate(dis_snek.Scale):
         if event.guild_id == 775912554928144384:
             member = self.bot.get_member(event.user.id, 775912554928144384)
 
-            if self.personal_bot_role in member.roles:
+            if member.has_role(self.personal_bot_role):
+                await utils.msg_to_owner(self.bot, event.client_status)
+
                 status_chan = self.bot.get_channel(952033760931610624)
 
                 if event.client_status == "offline":
@@ -30,4 +36,5 @@ class MemberUpdate(dis_snek.Scale):
 
 
 def setup(bot):
+    importlib.reload(utils)
     MemberUpdate(bot)
