@@ -85,6 +85,7 @@ class DebugScale(naff.Extension):
 
     @naff.prefixed_command(aliases=["reloadallextensions"])
     async def reload_all_extensions(self, ctx: naff.PrefixedContext):
+        """Reloads every extension that the bot has."""
         for ext in utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE")):
             self.bot.reload_extension(ext)
         await ctx.reply("All extensions reloaded!")

@@ -8,7 +8,7 @@ import common.utils as utils
 
 
 class HelpCMD(utils.Extension):
-    """The cog that handles the help command."""
+    """The extension that handles the help command."""
 
     def __init__(self, bot: naff.Client):
         self.name = "Help"
