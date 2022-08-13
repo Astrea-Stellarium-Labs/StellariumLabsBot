@@ -1,17 +1,20 @@
 import asyncio
+import contextlib
 import logging
 import os
 import typing
 
-import dis_snek
+import naff
+import redis.asyncio as aioredis
 from dotenv import load_dotenv
+from tortoise import Tortoise
 
 import common.utils as utils
 
 load_dotenv()
 
 
-logger = logging.getLogger("dis.snek")
+logger = logging.getLogger("agbot")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ.get("LOG_FILE_PATH"), encoding="utf-8", mode="a"
@@ -22,17 +25,22 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 
-async def generate_prefixes(bot: dis_snek.Snake, msg: dis_snek.Message):
+async def generate_prefixes(bot: naff.Client, msg: naff.Message):
     # here for future-proofing
     mention_prefixes = {f"<@{bot.user.id}> ", f"<@!{bot.user.id}> "}
     custom_prefixes = {"g!"}
     return mention_prefixes.union(custom_prefixes)
 
 
-class AstreasGalaxyBot(dis_snek.Snake):
-    @dis_snek.listen("ready")
+class AGBot(utils.AGBotBase):
+    @naff.listen("startup")
+    async def on_startup(self):
+        self.guild = self.get_guild(775912554928144384)  # type: ignore
+        self.fully_ready.set()
+
+    @naff.listen("ready")
     async def on_ready(self):
-        utcnow = dis_snek.Timestamp.utcnow()
+        utcnow = naff.Timestamp.utcnow()
         time_format = f"<t:{int(utcnow.timestamp())}:f>"
 
         connect_msg = (
@@ -45,26 +53,35 @@ class AstreasGalaxyBot(dis_snek.Snake):
 
         self.init_load = False
 
-        activity = dis_snek.Activity.create(
-            name="over Astrea's Galaxy", type=dis_snek.ActivityType.WATCHING
+        activity = naff.Activity.create(
+            name="over Astrea's Galaxy", type=naff.ActivityType.WATCHING
         )
 
         await self.change_presence(activity=activity)
 
-    @dis_snek.listen("resume")
+    @naff.listen("disconnect")
+    async def on_disconnect(self):
+        # basically, this needs to be done as otherwise, when the bot reconnects,
+        # redis may complain that a connection was closed by a peer
+        # this isnt a great solution, but it should work
+        with contextlib.suppress(Exception):
+            await self.redis.connection_pool.disconnect(inuse_connections=True)
+
+    @naff.listen("resume")
     async def on_resume(self):
-        activity = dis_snek.Activity.create(
-            name="over Astrea's Galaxy", type=dis_snek.ActivityType.WATCHING
+        activity = naff.Activity.create(
+            name="over Astrea's Galaxy", type=naff.ActivityType.WATCHING
         )
         await self.change_presence(activity=activity)
 
-    @dis_snek.listen("message_create")
-    async def _dispatch_prefixed_commands(self, event: dis_snek.events.MessageCreate):
+    @naff.listen("message_create")
+    async def _dispatch_prefixed_commands(
+        self, event: naff.events.MessageCreate
+    ) -> None:
         """Determine if a command is being triggered, and dispatch it.
         Annoyingly, unlike d.py, we have to overwrite this whole method
         in order to provide the 'replace _ with -' trick that was in the
         d.py version."""
-
         message = event.message
 
         if not message.content:
@@ -73,15 +90,15 @@ class AstreasGalaxyBot(dis_snek.Snake):
         if not message.author.bot:
             prefixes: str | typing.Iterable[str] = await self.generate_prefixes(
                 self, message
-            )
+            )  # type: ingore
 
-            if isinstance(prefixes, str) or prefixes == dis_snek.MENTION_PREFIX:
+            if isinstance(prefixes, str) or prefixes == naff.MENTION_PREFIX:
                 prefixes = (prefixes,)  # type: ignore
 
             prefix_used = None
 
             for prefix in prefixes:
-                if prefix == dis_snek.MENTION_PREFIX:
+                if prefix == naff.MENTION_PREFIX:
                     if mention := self._mention_reg.search(message.content):  # type: ignore
                         prefix = mention.group()
                     else:
@@ -99,11 +116,14 @@ class AstreasGalaxyBot(dis_snek.Snake):
                 command = self  # yes, this is a hack
 
                 while True:
-                    first_word: str = dis_snek.utils.get_first_word(content_parameters)  # type: ignore
-                    if isinstance(command, dis_snek.PrefixedCommand):
-                        new_command = command.subcommands.get(first_word)
+                    first_word: str = naff.utils.get_first_word(content_parameters)  # type: ignore
+                    command_first_word: str = (
+                        first_word.replace("-", "_") if first_word else first_word
+                    )
+                    if isinstance(command, naff.PrefixedCommand):
+                        new_command = command.subcommands.get(command_first_word)
                     else:
-                        new_command = command.prefixed_commands.get(first_word)
+                        new_command = command.prefixed_commands.get(command_first_word)
                     if not new_command or not new_command.enabled:
                         break
 
@@ -120,13 +140,16 @@ class AstreasGalaxyBot(dis_snek.Snake):
                         except Exception as e:
                             if new_command.error_callback:
                                 await new_command.error_callback(e, context)
-                            elif new_command.scale and new_command.scale.scale_error:
-                                await new_command.scale.scale_error(context)
+                            elif (
+                                new_command.extension
+                                and new_command.extension.extension_error
+                            ):
+                                await new_command.extension.extension_error(context)
                             else:
                                 await self.on_command_error(context, e)
                             return
 
-                if not isinstance(command, dis_snek.PrefixedCommand):
+                if not isinstance(command, naff.PrefixedCommand):
                     command = None
 
                 if command and command.enabled:
@@ -135,7 +158,7 @@ class AstreasGalaxyBot(dis_snek.Snake):
                     context.invoke_target = (
                         message.content.removeprefix(prefix_used).removesuffix(content_parameters).strip()  # type: ignore
                     )
-                    context.args = dis_snek.utils.get_args(context.content_parameters)
+                    context.args = naff.utils.get_args(context.content_parameters)
                     try:
                         if self.pre_run_callback:
                             await self.pre_run_callback(context)
@@ -150,24 +173,46 @@ class AstreasGalaxyBot(dis_snek.Snake):
     async def on_error(self, source: str, error: Exception, *args, **kwargs) -> None:
         await utils.error_handle(self, error)
 
+    async def stop(self) -> None:
+        await Tortoise.close_connections()  # this will complain a bit, just ignore it
+        return await super().stop()
 
-intents = dis_snek.Intents.ALL
-mentions = dis_snek.AllowedMentions.all()
 
-bot = AstreasGalaxyBot(
+intents = naff.Intents.ALL
+mentions = naff.AllowedMentions.all()
+
+bot = AGBot(
     generate_prefixes=generate_prefixes,
     allowed_mentions=mentions,
     intents=intents,
-    auto_defer=dis_snek.AutoDefer(enabled=False),  # we already handle deferring
+    delete_unused_application_cmds=True,
+    fetch_members=True,
+    logger=logger,
 )
 bot.init_load = True
-bot.color = dis_snek.Color(int(os.environ.get("BOT_COLOR")))  # 10129639, aka #9a90e7
+bot.color = naff.Color(int(os.environ.get("BOT_COLOR")))  # 2ebae1, aka 3062497
 
-cogs_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
-for cog in cogs_list:
-    try:
-        bot.load_extension(cog)
-    except dis_snek.errors.ExtensionLoadException:
-        raise
+with contextlib.suppress(ImportError):
+    import uvloop
 
-asyncio.run(bot.astart(os.environ.get("MAIN_TOKEN")))
+    uvloop.install()
+
+
+async def start():
+    await Tortoise.init(
+        db_url=os.environ.get("DB_URL"), modules={"models": ["common.models"]}
+    )
+    bot.redis = aioredis.from_url(os.environ.get("REDIS_URL"), decode_responses=True)
+    bot.fully_ready = asyncio.Event()
+
+    ext_list = utils.get_all_extensions(os.environ.get("DIRECTORY_OF_FILE"))
+    for ext in ext_list:
+        try:
+            bot.load_extension(ext)
+        except naff.errors.ExtensionLoadException:
+            raise
+
+    await bot.astart(os.environ.get("MAIN_TOKEN"))
+
+
+asyncio.run(start())

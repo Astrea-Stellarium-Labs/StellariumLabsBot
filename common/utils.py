@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.8
+import asyncio
 import collections
 import logging
 import traceback
@@ -6,28 +6,32 @@ import typing
 from pathlib import Path
 
 import aiohttp
-import dis_snek
+import naff
+import redis.asyncio as aioredis
+
+
+class CustomCheckFailure(naff.errors.BadArgument):
+    # custom classs for custom prerequisite failures outside of normal command checks
+    pass
 
 
 def proper_permissions() -> typing.Any:
-    async def predicate(ctx: dis_snek.PrefixedContext):
+    async def predicate(ctx: naff.Context):
         return ctx.author.has_permission(
-            dis_snek.Permissions.ADMINISTRATOR, dis_snek.Permissions.MANAGE_GUILD
+            naff.Permissions.ADMINISTRATOR, naff.Permissions.MANAGE_GUILD
         )
 
-    return dis_snek.check(predicate)
+    return naff.check(predicate)
 
 
-async def error_handle(
-    bot: dis_snek.Snake, error: Exception, ctx: dis_snek.Context = None
-):
+async def error_handle(bot: naff.Client, error: Exception, ctx: naff.Context = None):
     # handles errors and sends them to owner
     if isinstance(error, aiohttp.ServerDisconnectedError):
         to_send = "Disconnected from server!"
         split = True
     else:
         error_str = error_format(error)
-        logging.getLogger(dis_snek.const.logger_name).error(error_str)
+        logging.getLogger("agbot").error(error_str)
 
         chunks = line_split(error_str)
         for i in range(len(chunks)):
@@ -44,11 +48,11 @@ async def error_handle(
     await msg_to_owner(bot, to_send, split)
 
     if ctx:
-        if isinstance(ctx, dis_snek.PrefixedContext):
+        if isinstance(ctx, naff.PrefixedContext):
             await ctx.reply(
                 "An internal error has occured. The bot owner has been notified."
             )
-        elif isinstance(ctx, dis_snek.InteractionContext):
+        elif isinstance(ctx, naff.InteractionContext):
             await ctx.send(
                 content=(
                     "An internal error has occured. The bot owner has been notified."
@@ -56,7 +60,7 @@ async def error_handle(
             )
 
 
-async def msg_to_owner(bot: dis_snek.Snake, content, split=True):
+async def msg_to_owner(bot: naff.Client, content, split=True):
     # sends a message to the owner
     string = str(content)
 
@@ -72,9 +76,10 @@ def line_split(content: str, split_by=20):
     ]
 
 
-def embed_check(embed: dis_snek.Embed) -> bool:
+def embed_check(embed: naff.Embed) -> bool:
     """Checks if an embed is valid, as per Discord's guidelines.
-    See https://discord.com/developers/docs/resources/channel#embed-limits for details."""
+    See https://discord.com/developers/docs/resources/channel#embed-limits for details.
+    """
     if len(embed) > 6000:
         return False
 
@@ -100,7 +105,7 @@ def embed_check(embed: dis_snek.Embed) -> bool:
 
 def deny_mentions(user):
     # generates an AllowedMentions object that only pings the user specified
-    return dis_snek.AllowedMentions(users=[user])
+    return naff.AllowedMentions(users=[user])
 
 
 def error_format(error: Exception):
@@ -124,7 +129,7 @@ def file_to_ext(str_path, base_path):
     return str_path.replace(".py", "")
 
 
-def get_all_extensions(str_path, folder="extensions"):
+def get_all_extensions(str_path, folder="exts"):
     # gets all extensions in a folder
     ext_files = collections.deque()
     loc_split = str_path.split(folder)
@@ -142,7 +147,7 @@ def get_all_extensions(str_path, folder="extensions"):
         str_path = str(path.as_posix())
         str_path = file_to_ext(str_path, base_path)
 
-        if str_path != "extensions.db_handler":
+        if str_path != "exts.db_handler":
             ext_files.append(str_path)
 
     return ext_files
@@ -156,7 +161,25 @@ def yesno_friendly_str(bool_to_convert):
     return "yes" if bool_to_convert == True else "no"
 
 
-def role_check(ctx: dis_snek.PrefixedContext, role: dis_snek.Role):
+def error_embed_generate(error_msg):
+    return naff.Embed(color=naff.MaterialColors.RED, description=error_msg)
+
+
+def generate_mentions(ctx: naff.Context):
+    # generates an AllowedMentions object that is similar to what a user can usually use
+
+    permissions = ctx.channel.permissions_for(ctx.author)
+    if (
+        naff.Permissions.ADMINISTRATOR in permissions
+        or naff.Permissions.MENTION_EVERYONE in permissions
+    ):
+        return naff.AllowedMentions.all()
+
+    pingable_roles = tuple(r for r in ctx.guild.roles if r.mentionable)
+    return naff.AllowedMentions(parse=["users"], roles=pingable_roles)
+
+
+def role_check(ctx: naff.Context, role: naff.Role):
     top_role = ctx.guild.me.top_role
 
     if role.position > top_role.position:
@@ -166,18 +189,34 @@ def role_check(ctx: dis_snek.PrefixedContext, role: dis_snek.Role):
             + "my role is higher than the role you want to use."
         )
 
-
-class CustomCheckFailure(dis_snek.errors.BadArgument):
-    # custom classs for custom prerequisite failures outside of normal command checks
-    pass
+    return True
 
 
-async def _global_checks(ctx: dis_snek.Context):
-    return bool(ctx.guild) if ctx.bot.is_ready else False
+async def _global_checks(ctx: naff.Context):
+    if not ctx.bot.is_ready:
+        return False
+
+    if ctx.bot.init_load:
+        return False
+
+    if not ctx.guild:
+        return False
+
+    return True
 
 
-class Scale(dis_snek.Scale):
-    def __new__(cls, bot: dis_snek.Snake, *args, **kwargs):
+class Extension(naff.Extension):
+    def __new__(cls, bot: naff.Client, *args, **kwargs):
         new_cls = super().__new__(cls, bot, *args, **kwargs)
-        new_cls.add_scale_check(_global_checks)
+        new_cls.add_ext_check(_global_checks)
         return new_cls
+
+
+class AGBotBase(naff.Client):
+    if typing.TYPE_CHECKING:
+        init_load: bool
+        color: naff.Color
+        owner: naff.User
+        redis: aioredis.Redis
+        guild: naff.Guild
+        fully_ready: asyncio.Event

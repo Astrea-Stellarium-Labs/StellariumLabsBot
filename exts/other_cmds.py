@@ -1,25 +1,35 @@
 import importlib
 import time
 
-import dis_snek
+import naff
 
 import common.utils as utils
 
 
-class OtherCMDs(utils.Scale):
+class OtherCMDs(utils.Extension):
     def __init__(self, bot):
-        self.display_name = "Other"
+        self.name = "Other"
         self.bot = bot
 
-    @dis_snek.prefixed_command()
-    async def ping(self, ctx):
-        """Pings the bot. Great way of finding out if the bot’s working correctly, but otherwise has no real use."""
+    @naff.slash_command(
+        name="ping",
+        description=(
+            "Pings the bot. Great way of finding out if the bot’s working, but has no"
+            " real use."
+        ),
+        scopes=[775912554928144384],
+    )
+    async def ping(self, ctx: naff.InteractionContext):
+        await ctx.defer()
 
         start_time = time.perf_counter()
         ping_discord = round((self.bot.latency * 1000), 2)
 
-        mes = await ctx.reply(
-            f"Pong!\n`{ping_discord}` ms from Discord.\nCalculating personal ping..."
+        mes = await ctx.send(
+            content=(
+                f"Pong!\n`{ping_discord}` ms from Discord.\nCalculating personal"
+                " ping..."
+            ),
         )
 
         end_time = time.perf_counter()
