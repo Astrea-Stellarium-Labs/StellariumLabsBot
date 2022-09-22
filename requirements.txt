@@ -1,6 +1,6 @@
 naff==1.10.0
 python-dotenv==0.20.0
-humanize==4.3.0
+humanize==4.4.0
 asyncpg==0.26.0
 tortoise-orm==0.19.2
 redis[hiredis]==4.3.4
