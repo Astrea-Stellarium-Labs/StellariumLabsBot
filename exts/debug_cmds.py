@@ -77,7 +77,7 @@ class DebugScale(naff.Extension):
         self.bot.load_extension(module)
         await ctx.reply(f"Loaded `{module}`.")
 
-    @debug.subcommand(aliases=["unload"])
+    @debug.subcommand()
     async def unload(self, ctx: naff.PrefixedContext, *, module: str) -> None:
         """Sheds a scale."""
         self.bot.unload_extension(module)
