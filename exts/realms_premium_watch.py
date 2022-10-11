@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import importlib
 
 import naff
@@ -24,10 +25,24 @@ class RealmsPremiumWatch(utils.Extension):
         if not self.premium_role:
             return
 
+        if event.before._role_ids == event.after._role_ids:
+            return
+
         if event.before.has_role(self.premium_role) and not event.after.has_role(
             self.premium_role
         ):
             await models.PremiumCode.filter(user_id=int(event.before.id)).delete()
+
+        elif not event.before.has_role(self.premium_role) and event.after.has_role(
+            self.premium_role
+        ):
+            with contextlib.suppress(naff.errors.HTTPException):
+                await event.after.send(
+                    "Hey! Thank you for donating and getting Realms Playerlist"
+                    " Premium!\n\nTo get your Premium code, check out"
+                    " <#1029164782617632768> and open a ticket. Astrea will be able to"
+                    " give your code from there."
+                )
 
     @naff.listen()
     async def on_member_remove(self, event: naff.events.MemberRemove):
