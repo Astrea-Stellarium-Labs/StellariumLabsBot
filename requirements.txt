@@ -1,4 +1,4 @@
-naff==1.11.1
+naff==2.0.0
 python-dotenv==0.21.0
 humanize==4.4.0
 asyncpg==0.26.0
