@@ -73,7 +73,7 @@ class RealmsPremiumWatch(utils.Extension):
                 await code.delete()
 
     @naff.prefixed_command()
-    @naff.is_owner()  # type: ignore
+    @naff.check(naff.is_owner())
     async def resync_premium(self, ctx: naff.PrefixedContext):
         if not self.premium_role:
             return
@@ -81,10 +81,14 @@ class RealmsPremiumWatch(utils.Extension):
         async with ctx.channel.typing:
             self.premium_role: naff.Role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
             member_ids = [member.id for member in self.premium_role.members]
+            member_ids.append(self.bot.owner.id)
 
             async for code in models.PremiumCode.filter(
                 user_id__not_in=member_ids
             ).prefetch_related("guilds"):
+                if code.user_id is None:
+                    continue
+
                 for config in code.guilds:
                     config.premium_code = None
                     config.live_playerlist = False
