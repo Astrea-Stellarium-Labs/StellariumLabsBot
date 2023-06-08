@@ -31,7 +31,16 @@ class RealmsPremiumWatch(utils.Extension):
         if event.before.has_role(self.premium_role) and not event.after.has_role(
             self.premium_role
         ):
-            await models.PremiumCode.filter(user_id=int(event.before.id)).delete()
+            code = await models.PremiumCode.get_or_none(
+                user_id=int(event.before.id)
+            ).prefetch_related("guilds")
+            if code:
+                for config in code.guilds:
+                    config.premium_code = None
+                    config.live_playerlist = False
+                    config.fetch_devices = False
+                    await config.save()
+                await code.delete()
 
         elif not event.before.has_role(self.premium_role) and event.after.has_role(
             self.premium_role
@@ -52,7 +61,38 @@ class RealmsPremiumWatch(utils.Extension):
         if not isinstance(event.member, naff.Member) or event.member.has_role(
             self.premium_role
         ):
-            await models.PremiumCode.filter(user_id=int(event.member.id)).delete()
+            code = await models.PremiumCode.get_or_none(
+                user_id=int(event.member.id)
+            ).prefetch_related("guilds")
+            if code:
+                for config in code.guilds:
+                    config.premium_code = None
+                    config.live_playerlist = False
+                    config.fetch_devices = False
+                    await config.save()
+                await code.delete()
+
+    @naff.prefixed_command()
+    @naff.is_owner()  # type: ignore
+    async def resync_premium(self, ctx: naff.PrefixedContext):
+        if not self.premium_role:
+            return
+
+        async with ctx.channel.typing:
+            self.premium_role: naff.Role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
+            member_ids = [member.id for member in self.premium_role.members]
+
+            async for code in models.PremiumCode.filter(
+                user_id__not_in=member_ids
+            ).prefetch_related("guilds"):
+                for config in code.guilds:
+                    config.premium_code = None
+                    config.live_playerlist = False
+                    config.fetch_devices = False
+                    await config.save()
+                await code.delete()
+
+        await ctx.reply("Done!")
 
 
 def setup(bot):
