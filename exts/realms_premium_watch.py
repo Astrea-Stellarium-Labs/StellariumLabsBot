@@ -39,6 +39,7 @@ class RealmsPremiumWatch(utils.Extension):
                     config.premium_code = None
                     config.live_playerlist = False
                     config.fetch_devices = False
+                    config.live_online_channel = None
                     await config.save()
                 await code.delete()
 
@@ -69,6 +70,7 @@ class RealmsPremiumWatch(utils.Extension):
                     config.premium_code = None
                     config.live_playerlist = False
                     config.fetch_devices = False
+                    config.live_online_channel = None
                     await config.save()
                 await code.delete()
 
@@ -93,6 +95,7 @@ class RealmsPremiumWatch(utils.Extension):
                     config.premium_code = None
                     config.live_playerlist = False
                     config.fetch_devices = False
+                    config.live_online_channel = None
                     await config.save()
                 await code.delete()
 
