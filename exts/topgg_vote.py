@@ -70,6 +70,7 @@ class TopGGHandling(ipy.Extension):
 
         member = await self.bot.guild.fetch_member(vote_data.user)
         if member:
+            username = f"{member.mention} (**{member.tag}**)"
             if not member.has_role(self.bot_vote_role):
                 await member.add_role(self.bot_vote_role)
                 got_role = True
