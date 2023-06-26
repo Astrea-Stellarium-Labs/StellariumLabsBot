@@ -12,7 +12,7 @@ import common.utils as utils
 
 
 @attrs.define(kw_only=True)
-class BotVote(CamelCaseModel):
+class BotVote:
     bot: int
     user: int
     type: typing.Literal["upvote", "test"]
