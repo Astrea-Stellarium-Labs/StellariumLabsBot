@@ -32,7 +32,7 @@ class BotVote:
 
 class TopGGHandling(ipy.Extension):
     def __init__(self, bot: utils.AGBotBase):
-        self.name = "General"
+        self.name = "Top.gg Handling"
         self.bot: utils.AGBotBase = bot
         self.bot_vote_channel: ipy.GuildText = None  # type: ignore
         self.runner: web.AppRunner = None  # type: ignore
