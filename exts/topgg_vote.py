@@ -3,33 +3,31 @@ import importlib
 import os
 import typing
 
+import attrs
 import interactions as ipy
 import orjson
 from aiohttp import web
-from pydantic import BaseModel
 
 import common.utils as utils
 
 
-def to_camel(string):
-    words = string.split("_")
-    return words[0] + "".join(word.capitalize() for word in words[1:])
-
-
-class CamelCaseModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        allow_population_by_field_name = True
-        alias_generator = to_camel
-        json_loads = orjson.loads
-
-
+@attrs.define(kw_only=True)
 class BotVote(CamelCaseModel):
     bot: int
     user: int
     type: typing.Literal["upvote", "test"]
-    isWeekend: bool = False
+    is_weekend: bool = False
     query: str | None = None
+
+    @classmethod
+    def from_topgg(cls, data: dict):
+        return cls(
+            bot=data["bot"],
+            user=data["user"],
+            type=data["type"],
+            is_weekend=data.get("isWeekend", False),
+            query=data.get("query"),
+        )
 
 
 class TopGGHandling(ipy.Extension):
@@ -65,7 +63,7 @@ class TopGGHandling(ipy.Extension):
         if not authorization or authorization != os.environ["TOPGG_AUTH"]:
             return web.Response(status=401)
 
-        vote_data = BotVote.parse_raw(await request.read())
+        vote_data = BotVote.from_topgg(await request.json(loads=orjson.loads))
 
         username: str = f"<@{vote_data.user}>"
         got_role: bool = False
