@@ -61,7 +61,7 @@ class VoteHandling(ipy.Extension):
         vote_data = await request.json(loads=orjson.loads)
         user_id = int(vote_data["id"])
         return await self.handle_vote(
-            f"<@{user_id}> ({vote_data['username']})",
+            f"<@{user_id}> (**@{vote_data['username']})**",
             user_id,
             725483868777611275,
             "Discord Bot List",
