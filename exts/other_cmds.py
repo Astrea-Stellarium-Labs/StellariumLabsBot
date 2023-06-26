@@ -8,7 +8,7 @@ import interactions as ipy
 
 import common.utils as utils
 
-IPY_VERSION = _v("interactions.py")
+IPY_VERSION = _v("discord-py-interactions")
 
 
 class OtherCMDs(utils.Extension):
