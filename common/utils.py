@@ -6,25 +6,27 @@ import typing
 from pathlib import Path
 
 import aiohttp
-import naff
+import interactions as ipy
 import redis.asyncio as aioredis
+from interactions.ext import prefixed_commands as prefixed
 
 
-class CustomCheckFailure(naff.errors.BadArgument):
+class CustomCheckFailure(ipy.errors.BadArgument):
     # custom classs for custom prerequisite failures outside of normal command checks
     pass
 
 
-def proper_permissions() -> typing.Any:
-    async def predicate(ctx: naff.Context):
-        return ctx.author.has_permission(
-            naff.Permissions.ADMINISTRATOR, naff.Permissions.MANAGE_GUILD
+def proper_permissions():
+    async def predicate(ctx: ipy.BaseContext):
+        return (
+            ipy.Permissions.ADMINISTRATOR in ctx.author.guild_permissions
+            or ipy.Permissions.MANAGE_GUILD in ctx.author.guild_permissions
         )
 
-    return naff.check(predicate)
+    return ipy.check(predicate)
 
 
-async def error_handle(bot: naff.Client, error: Exception, ctx: naff.Context = None):
+async def error_handle(bot: ipy.Client, error: Exception, ctx: ipy.BaseContext = None):
     # handles errors and sends them to owner
     if isinstance(error, aiohttp.ServerDisconnectedError):
         to_send = "Disconnected from server!"
@@ -48,11 +50,11 @@ async def error_handle(bot: naff.Client, error: Exception, ctx: naff.Context = N
     await msg_to_owner(bot, to_send, split)
 
     if ctx:
-        if isinstance(ctx, naff.PrefixedContext):
+        if isinstance(ctx, prefixed.PrefixedContext):
             await ctx.reply(
                 "An internal error has occured. The bot owner has been notified."
             )
-        elif isinstance(ctx, naff.InteractionContext):
+        elif isinstance(ctx, ipy.InteractionContext):
             await ctx.send(
                 content=(
                     "An internal error has occured. The bot owner has been notified."
@@ -60,7 +62,7 @@ async def error_handle(bot: naff.Client, error: Exception, ctx: naff.Context = N
             )
 
 
-async def msg_to_owner(bot: naff.Client, content, split=True):
+async def msg_to_owner(bot: ipy.Client, content, split=True):
     # sends a message to the owner
     string = str(content)
 
@@ -76,7 +78,7 @@ def line_split(content: str, split_by=20):
     ]
 
 
-def embed_check(embed: naff.Embed) -> bool:
+def embed_check(embed: ipy.Embed) -> bool:
     """Checks if an embed is valid, as per Discord's guidelines.
     See https://discord.com/developers/docs/resources/channel#embed-limits for details.
     """
@@ -105,7 +107,7 @@ def embed_check(embed: naff.Embed) -> bool:
 
 def deny_mentions(user):
     # generates an AllowedMentions object that only pings the user specified
-    return naff.AllowedMentions(users=[user])
+    return ipy.AllowedMentions(users=[user])
 
 
 def error_format(error: Exception):
@@ -129,7 +131,7 @@ def file_to_ext(str_path, base_path):
     return str_path.replace(".py", "")
 
 
-def get_all_extensions(str_path, folder="exts"):
+def get_all_extensions(str_path: str, folder="exts"):
     # gets all extensions in a folder
     ext_files = collections.deque()
     loc_split = str_path.split(folder)
@@ -162,24 +164,24 @@ def yesno_friendly_str(bool_to_convert):
 
 
 def error_embed_generate(error_msg):
-    return naff.Embed(color=naff.MaterialColors.RED, description=error_msg)
+    return ipy.Embed(color=ipy.MaterialColors.RED, description=error_msg)
 
 
-def generate_mentions(ctx: naff.Context):
+def generate_mentions(ctx: ipy.BaseContext):
     # generates an AllowedMentions object that is similar to what a user can usually use
 
     permissions = ctx.channel.permissions_for(ctx.author)
     if (
-        naff.Permissions.ADMINISTRATOR in permissions
-        or naff.Permissions.MENTION_EVERYONE in permissions
+        ipy.Permissions.ADMINISTRATOR in permissions
+        or ipy.Permissions.MENTION_EVERYONE in permissions
     ):
-        return naff.AllowedMentions.all()
+        return ipy.AllowedMentions.all()
 
     pingable_roles = tuple(r for r in ctx.guild.roles if r.mentionable)
-    return naff.AllowedMentions(parse=["users"], roles=pingable_roles)
+    return ipy.AllowedMentions(parse=["users"], roles=pingable_roles)
 
 
-def role_check(ctx: naff.Context, role: naff.Role):
+def role_check(ctx: ipy.BaseContext, role: ipy.Role):
     top_role = ctx.guild.me.top_role
 
     if role.position > top_role.position:
@@ -192,7 +194,7 @@ def role_check(ctx: naff.Context, role: naff.Role):
     return True
 
 
-async def _global_checks(ctx: naff.Context):
+async def _global_checks(ctx: ipy.BaseContext):
     if not ctx.bot.is_ready:
         return False
 
@@ -205,18 +207,18 @@ async def _global_checks(ctx: naff.Context):
     return True
 
 
-class Extension(naff.Extension):
-    def __new__(cls, bot: naff.Client, *args, **kwargs):
+class Extension(ipy.Extension):
+    def __new__(cls, bot: ipy.Client, *args, **kwargs):
         new_cls = super().__new__(cls, bot, *args, **kwargs)
         new_cls.add_ext_check(_global_checks)
         return new_cls
 
 
-class AGBotBase(naff.Client):
+class AGBotBase(prefixed.PrefixedInjectedClient):
     if typing.TYPE_CHECKING:
         init_load: bool
-        color: naff.Color
-        owner: naff.User
+        color: ipy.Color
+        owner: ipy.User
         redis: aioredis.Redis
-        guild: naff.Guild
+        guild: ipy.Guild
         fully_ready: asyncio.Event

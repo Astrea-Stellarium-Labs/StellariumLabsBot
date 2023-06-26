@@ -1,5 +1,4 @@
 import typing
-from datetime import datetime
 
 from tortoise import fields
 from tortoise.contrib.postgres.fields import ArrayField
