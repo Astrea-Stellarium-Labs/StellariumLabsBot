@@ -26,6 +26,13 @@ def proper_permissions():
     return ipy.check(predicate)
 
 
+def permissions_check(ctx: ipy.BaseContext):
+    return (
+        ipy.Permissions.ADMINISTRATOR in ctx.author.guild_permissions
+        or ipy.Permissions.MANAGE_GUILD in ctx.author.guild_permissions
+    )
+
+
 async def error_handle(bot: ipy.Client, error: Exception, ctx: ipy.BaseContext = None):
     # handles errors and sends them to owner
     if isinstance(error, aiohttp.ServerDisconnectedError):
