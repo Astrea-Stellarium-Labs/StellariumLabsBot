@@ -79,7 +79,7 @@ class TopGGHandling(ipy.Extension):
                 username = f"{user.mention} (**{user.tag}**)"
 
         vote_content = (
-            f"{username} has voted for <@{vote_data.bot}> on top.gg - thank you so"
+            f"{username} has voted for <@{vote_data.bot}> on Top.gg - thank you so"
             " much!"
         )
         if got_role:
