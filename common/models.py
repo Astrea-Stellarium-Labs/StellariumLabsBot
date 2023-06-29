@@ -1,22 +1,8 @@
 import typing
+from datetime import datetime
 
 from tortoise import fields
-from tortoise.contrib.postgres.fields import ArrayField
 from tortoise.models import Model
-
-
-class SetField(ArrayField, set):
-    """A somewhat exploity way of using an array field to store a set."""
-
-    def to_python_value(self, value):
-        value = None if value is None else set(value)
-        self.validate(value)
-        return value
-
-    def to_db_value(self, value, _):
-        self.validate(value)
-        value = None if value is None else list(value)
-        return value
 
 
 class GuildConfig(Model):
@@ -48,8 +34,10 @@ class PremiumCode(Model):
 
     id: int = fields.IntField(pk=True)
     code: str = fields.CharField(100)
-    user_id: int = fields.BigIntField(null=True)
+    user_id: int | None = fields.BigIntField(null=True)
     uses: int = fields.IntField(default=0)
-    max_uses: int = fields.IntField(default=1)
+    max_uses: int = fields.IntField(default=2)
+    customer_id: typing.Optional[str] = fields.CharField(50, null=True)
+    expires_at: typing.Optional[datetime] = fields.DatetimeField(null=True)
 
     guilds: fields.ReverseRelation["GuildConfig"]

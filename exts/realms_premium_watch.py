@@ -33,7 +33,8 @@ class RealmsPremiumWatch(utils.Extension):
             self.premium_role
         ):
             code = await models.PremiumCode.get_or_none(
-                user_id=int(event.before.id)
+                user_id=int(event.before.id),
+                customer_id__isnull=True,
             ).prefetch_related("guilds")
             if code:
                 for config in code.guilds:
@@ -47,13 +48,27 @@ class RealmsPremiumWatch(utils.Extension):
         elif not event.before.has_role(self.premium_role) and event.after.has_role(
             self.premium_role
         ):
-            with contextlib.suppress(ipy.errors.HTTPException):
-                await event.after.send(
-                    "Hey! Thank you for donating and getting Realms Playerlist"
-                    " Premium!\n\nTo get your Premium code, check out"
-                    " <#1029164782617632768> and open a ticket. Astrea will be able to"
-                    " give your code from there."
-                )
+            if not await models.PremiumCode.exists(
+                user_id=int(event.before.id),
+            ):
+                with contextlib.suppress(ipy.errors.HTTPException):
+                    await event.after.send(
+                        "Hey! Thank you for donating and getting Realms Playerlist"
+                        " Premium!\n\nTo get your Premium code, check out"
+                        " <#1029164782617632768> and open a ticket. Astrea will be able"
+                        " to give your code from there."
+                    )
+
+    @ipy.listen()
+    async def on_member_add(self, event: ipy.events.MemberAdd):
+        if not self.premium_role:
+            return
+
+        if await models.PremiumCode.exists(
+            user_id=int(event.member.id),
+            customer_id__not_isnull=True,
+        ):
+            await event.member.add_role(self.premium_role)
 
     @ipy.listen()
     async def on_member_remove(self, event: ipy.events.MemberRemove):
@@ -64,7 +79,8 @@ class RealmsPremiumWatch(utils.Extension):
             self.premium_role
         ):
             code = await models.PremiumCode.get_or_none(
-                user_id=int(event.member.id)
+                user_id=int(event.member.id),
+                customer_id__isnull=True,
             ).prefetch_related("guilds")
             if code:
                 for config in code.guilds:
@@ -87,7 +103,8 @@ class RealmsPremiumWatch(utils.Extension):
             member_ids.append(self.bot.owner.id)
 
             async for code in models.PremiumCode.filter(
-                user_id__not_in=member_ids
+                user_id__not_in=member_ids,
+                customer_id__isnull=True,
             ).prefetch_related("guilds"):
                 if code.user_id is None:
                     continue
