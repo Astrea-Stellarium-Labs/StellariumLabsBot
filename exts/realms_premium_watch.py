@@ -15,11 +15,30 @@ class RealmsPremiumWatch(utils.Extension):
         self.bot: utils.AGBotBase = bot
         self.premium_role: ipy.Role = None  # type: ignore
 
-        asyncio.create_task(self.async_init())
+        asyncio.create_task(self.async_start())
 
-    async def async_init(self):
+    async def async_start(self):
         await self.bot.fully_ready.wait()
         self.premium_role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
+        self.update_roles.start()
+
+    def drop(self) -> None:
+        self.update_roles.stop()
+        return super().drop()
+
+    @ipy.Task.create(ipy.IntervalTrigger(hours=6))
+    async def update_roles(self):
+        self.premium_role: ipy.Role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
+        member_ids: list[int] = [int(member.id) for member in self.premium_role.members]  # type: ignore
+
+        values = await models.PremiumCode.filter(user_id__in=member_ids).values(
+            "user_id"
+        )
+        synced_member_ids: set[int] = {int(value["user_id"]) for value in values}
+
+        for member in self.premium_role.members:
+            if member.id not in synced_member_ids:
+                await member.remove_role(self.premium_role)
 
     @ipy.listen()
     async def on_member_update(self, event: ipy.events.MemberUpdate):
