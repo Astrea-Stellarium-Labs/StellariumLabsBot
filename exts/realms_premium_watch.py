@@ -29,12 +29,11 @@ class RealmsPremiumWatch(utils.Extension):
     @ipy.Task.create(ipy.IntervalTrigger(hours=6))
     async def update_roles(self):
         self.premium_role: ipy.Role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
-        member_ids: list[int] = [int(member.id) for member in self.premium_role.members]  # type: ignore
 
-        values = await models.PremiumCode.filter(user_id__in=member_ids).values(
-            "user_id"
-        )
-        synced_member_ids: set[int] = {int(value["user_id"]) for value in values}
+        values = await models.PremiumCode.all().values("user_id")
+        synced_member_ids: set[int] = {
+            int(value["user_id"]) for value in values if value["user_id"] is not None
+        }
 
         for member in self.premium_role.members:
             if member.id not in synced_member_ids:
