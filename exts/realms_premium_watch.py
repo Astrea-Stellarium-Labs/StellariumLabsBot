@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import datetime
 import importlib
 
 import interactions as ipy
@@ -26,8 +27,10 @@ class RealmsPremiumWatch(utils.Extension):
         self.update_roles.stop()
         return super().drop()
 
-    @ipy.Task.create(ipy.IntervalTrigger(hours=6))
+    @ipy.Task.create(ipy.IntervalTrigger(hours=12))
     async def update_roles(self):
+        filter_time = ipy.Timestamp.utcnow() - datetime.timedelta(days=3)
+
         self.premium_role: ipy.Role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
 
         values = await models.PremiumCode.all().values("user_id")
@@ -36,7 +39,7 @@ class RealmsPremiumWatch(utils.Extension):
         }
 
         for member in self.premium_role.members:
-            if member.id not in synced_member_ids:
+            if member.id not in synced_member_ids and member.joined_at < filter_time:
                 await member.remove_role(self.premium_role)
 
     @ipy.listen()
