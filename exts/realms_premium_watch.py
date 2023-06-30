@@ -9,6 +9,20 @@ from interactions.ext import prefixed_commands as prefixed
 import common.models as models
 import common.utils as utils
 
+PREMIUM_REMOVE_MESSAGE = """
+Hello! This bot filters out people who do not have a Realms Playerlist Premium \
+code but have the Premium Supporter role. It seems like you were caught in the crossfire, so I'd like to address it:
+
+- Did you not have Premium or unsubscribed from it recently? Fair enough, just ignore this message.
+- Did you mean to actually get your code and used Ko-Fi? Please follow this Ko-Fi guide on how to re-get it: \
+https://help.ko-fi.com/hc/en-us/articles/8664701197073-How-Do-I-Join-a-Creator-s-Discord-Server-#my-role-appears-on-the-creator-s-page-but-is-not-assigned--0-2 - \
+from there, make sure to go to <#1029164782617632768> and open a ticket, as *you will not get the code otherwise.*
+- Want to cancel your subscription? If you use Ko-Fi, they has a guide for that here: https://help.ko-fi.com/hc/en-us/articles/360007556993-How-Do-I-Cancel-a-Subscription-to-a-Creator- - \
+otherwise, you can do it through the Realms Playerlist Premium dashboard: https://rpldash.astrea.cc/premium/.
+- Using Ko-Fi and want to use a different method to get Premium? A new, simplified version of getting Premium is currently being tested out \
+- *cancel your Premium as above*, but then follow the "New Method" steps as seen here: https://rpl.astrea.cc/wiki/premium.html#how-to-get-playerlist-premium
+""".strip()
+
 
 class RealmsPremiumWatch(utils.Extension):
     def __init__(self, bot: utils.AGBotBase):
@@ -41,6 +55,8 @@ class RealmsPremiumWatch(utils.Extension):
         for member in self.premium_role.members:
             if member.id not in synced_member_ids and member.joined_at < filter_time:
                 await member.remove_role(self.premium_role)
+                with contextlib.suppress(ipy.errors.HTTPException):
+                    await member.send(PREMIUM_REMOVE_MESSAGE)
 
     @ipy.listen()
     async def on_member_update(self, event: ipy.events.MemberUpdate):
