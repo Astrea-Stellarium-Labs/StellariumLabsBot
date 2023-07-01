@@ -47,7 +47,7 @@ class AGBot(utils.AGBotBase):
         self.init_load = False
 
         activity = ipy.Activity.create(
-            name="over Astrea's Galaxy", type=ipy.ActivityType.WATCHING
+            name="over Stellarium Labs", type=ipy.ActivityType.WATCHING
         )
 
         await self.change_presence(activity=activity)
@@ -63,7 +63,7 @@ class AGBot(utils.AGBotBase):
     @ipy.listen("resume")
     async def on_resume(self):
         activity = ipy.Activity.create(
-            name="over Astrea's Galaxy", type=ipy.ActivityType.WATCHING
+            name="over Stellarium Labs", type=ipy.ActivityType.WATCHING
         )
         await self.change_presence(activity=activity)
 

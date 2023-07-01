@@ -62,9 +62,9 @@ class OtherCMDs(utils.Extension):
     @ipy.slash_command("about", description="Gives information about the bot.")
     async def about(self, ctx: ipy.InteractionContext):
         about_msg = (
-            "Hello! I'm the helper bot for **Astrea's Galaxy**, doing various things"
-            " around the server. I probably don't have anything useful for you, but"
-            " feel free to poke around!"
+            f"Hello! I'm the helper bot for **{self.bot.guild.name}**, doing various"
+            " things around the server. I probably don't have anything useful for you,"
+            " but feel free to poke around!"
         )
 
         about_embed = ipy.Embed(

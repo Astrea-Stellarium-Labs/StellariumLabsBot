@@ -1,3 +1,3 @@
-# Astrea's Galaxy Bot
+# Stellarium Labs Bot
 
-A bot for Astrea's Galaxy, a place to get help about my Discord bots ([invite link](https://discord.gg/NSdetwGjpK)) as well to hangout if you want to.
+A bot for Stellarium Labs, a place to discuss Astrea's bots and tools ([invite link to server](https://discord.gg/NSdetwGjpK)).
