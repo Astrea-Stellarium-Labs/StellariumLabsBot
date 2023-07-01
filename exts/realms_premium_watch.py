@@ -30,9 +30,9 @@ class RealmsPremiumWatch(utils.Extension):
         self.bot: utils.AGBotBase = bot
         self.premium_role: ipy.Role = None  # type: ignore
 
-        asyncio.create_task(self.async_start())
+        asyncio.create_task(self.async_run())
 
-    async def async_start(self):
+    async def async_run(self):
         await self.bot.fully_ready.wait()
         self.premium_role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
         self.update_roles.start()
