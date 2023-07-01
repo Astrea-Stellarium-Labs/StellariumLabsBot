@@ -1,6 +1,6 @@
 discord-py-interactions==5.7.0
 python-dotenv==1.0.0
-humanize==4.6.0
+humanize==4.7.0
 asyncpg==0.27.0
 tortoise-orm[accel]==0.19.3
 redis[hiredis]==4.6.0
