@@ -202,16 +202,7 @@ def role_check(ctx: ipy.BaseContext, role: ipy.Role):
 
 
 async def _global_checks(ctx: ipy.BaseContext):
-    if not ctx.bot.is_ready:
-        return False
-
-    if ctx.bot.init_load:
-        return False
-
-    if not ctx.guild:
-        return False
-
-    return True
+    return False if ctx.bot.init_load else bool(ctx.guild)
 
 
 class Extension(ipy.Extension):
