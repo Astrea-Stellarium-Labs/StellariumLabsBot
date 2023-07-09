@@ -76,12 +76,15 @@ class VoteHandling(ipy.Extension):
 
         vote_data = await request.json(loads=orjson.loads)
         user_id = int(vote_data["user"])
+        maybe_bot_id = vote_data["bot"]
+        bot_id = int(maybe_bot_id) if maybe_bot_id.isdigit() else 725483868777611275
+
         return await self.handle_vote(
             f"<@{user_id}>",
             user_id,
-            int(vote_data["bot"]),
+            bot_id,
             "Discords.com",
-            "https://discords.com/bots/bot/{bot_id}}",
+            "https://discords.com/bots/bot/{bot_id}",
         )
 
     async def handle_vote(
