@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import importlib
 import os
 
@@ -7,6 +8,8 @@ import orjson
 from aiohttp import web
 
 import common.utils as utils
+
+TWELVE_HOURS = int(datetime.timedelta(hours=12).total_seconds())
 
 
 class VoteHandling(ipy.Extension):
@@ -46,6 +49,12 @@ class VoteHandling(ipy.Extension):
 
         vote_data = await request.json(loads=orjson.loads)
         user_id = int(vote_data["user"])
+        bot_id = int(vote_data["bot"])
+
+        if bot_id == 725483868777611275 and vote_data["type"] != "test":
+            # note: im specifically trying to encourage top.gg only votes
+            await self.bot.redis.setex(f"rpl-voted-{user_id}", TWELVE_HOURS, "1")
+
         return await self.handle_vote(
             f"<@{user_id}>",
             user_id,
