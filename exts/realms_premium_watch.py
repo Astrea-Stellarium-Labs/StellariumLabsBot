@@ -29,12 +29,14 @@ class RealmsPremiumWatch(utils.Extension):
         self.name = "Realms Playerlist Premium Watch"
         self.bot: utils.AGBotBase = bot
         self.premium_role: ipy.Role = None  # type: ignore
+        self.supporter_role: ipy.Role = None  # type: ignore
 
         asyncio.create_task(self.async_run())
 
     async def async_run(self):
         await self.bot.fully_ready.wait()
         self.premium_role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
+        self.supporter_role = await self.bot.guild.fetch_role(987447832715857961)  # type: ignore
         self.update_roles.start()
 
     def drop(self) -> None:
@@ -105,7 +107,7 @@ class RealmsPremiumWatch(utils.Extension):
             user_id=int(event.member.id),
             customer_id__not_isnull=True,
         ):
-            await event.member.add_role(self.premium_role)
+            await event.member.add_roles((self.premium_role, self.supporter_role))
 
     @ipy.listen()
     async def on_member_remove(self, event: ipy.events.MemberRemove):
