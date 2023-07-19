@@ -53,15 +53,21 @@ class VoteHandling(ipy.Extension):
 
         if bot_id == 725483868777611275 and vote_data["type"] != "test":
             # note: im specifically trying to encourage top.gg only votes
-            await self.bot.redis.setex(f"rpl-voted-{user_id}", TWELVE_HOURS, "1")
+            _ = asyncio.create_task(
+                self.bot.redis.setex(f"rpl-voted-{user_id}", TWELVE_HOURS, "1")
+            )
 
-        return await self.handle_vote(
-            f"<@{user_id}>",
-            user_id,
-            int(vote_data["bot"]),
-            "Top.gg",
-            "https://top.gg/bot/{bot_id}",
+        __ = asyncio.create_task(
+            self.handle_vote(
+                f"<@{user_id}>",
+                user_id,
+                int(vote_data["bot"]),
+                "Top.gg",
+                "https://top.gg/bot/{bot_id}",
+            )
         )
+
+        return web.Response(status=200)
 
     async def dbl_handling(self, request: web.Request):
         authorization = request.headers.get("Authorization")
@@ -70,13 +76,17 @@ class VoteHandling(ipy.Extension):
 
         vote_data = await request.json(loads=orjson.loads)
         user_id = int(vote_data["id"])
-        return await self.handle_vote(
-            f"<@{user_id}> (**@{vote_data['username']})**",
-            user_id,
-            725483868777611275,
-            "Discord Bot List",
-            "https://discordbotlist.com/bots/realms-playerlist-bot",
+        _ = asyncio.create_task(
+            self.handle_vote(
+                f"<@{user_id}> (**@{vote_data['username']})**",
+                user_id,
+                725483868777611275,
+                "Discord Bot List",
+                "https://discordbotlist.com/bots/realms-playerlist-bot",
+            )
         )
+
+        return web.Response(status=200)
 
     async def discords_com_handler(self, request: web.Request):
         authorization = request.headers.get("Authorization")
@@ -88,52 +98,57 @@ class VoteHandling(ipy.Extension):
         maybe_bot_id = vote_data["bot"]
         bot_id = int(maybe_bot_id) if maybe_bot_id.isdigit() else 725483868777611275
 
-        return await self.handle_vote(
-            f"<@{user_id}>",
-            user_id,
-            bot_id,
-            "Discords.com",
-            "https://discords.com/bots/bot/{bot_id}",
+        _ = asyncio.create_task(
+            self.handle_vote(
+                f"<@{user_id}>",
+                user_id,
+                bot_id,
+                "Discords.com",
+                "https://discords.com/bots/bot/{bot_id}",
+            )
         )
+
+        return web.Response(status=200)
 
     async def handle_vote(
         self, username: str, user_id: int, bot_id: int, site_name: str, vote_url: str
     ):
-        got_role: bool = False
+        try:
+            got_role: bool = False
 
-        member = await self.bot.guild.fetch_member(user_id)
-        if member:
-            username = f"{member.mention} (**{member.tag}**)"
-            if not member.has_role(self.bot_vote_role):
-                await member.add_role(self.bot_vote_role)
-                got_role = True
-        else:
-            user = await self.bot.fetch_user(user_id)
-            if user:
-                username = f"{user.mention} (**{user.tag}**)"
+            member = await self.bot.guild.fetch_member(user_id)
+            if member:
+                username = f"{member.mention} (**{member.tag}**)"
+                if not member.has_role(self.bot_vote_role):
+                    await member.add_role(self.bot_vote_role)
+                    got_role = True
+            else:
+                user = await self.bot.fetch_user(user_id)
+                if user:
+                    username = f"{user.mention} (**{user.tag}**)"
 
-        vote_content = (
-            f"{username} has voted for <@{bot_id}> on **{site_name}** - thank you so"
-            " much!"
-        )
-        if got_role:
-            vote_content += (
-                f"\n\nThey also got the <@&{self.bot_vote_role}> role for voting for"
-                " the first time! Consider voting too if you want a cool role like"
-                " that."
+            vote_content = (
+                f"{username} has voted for <@{bot_id}> on **{site_name}** - thank you"
+                " so much!"
             )
+            if got_role:
+                vote_content += (
+                    f"\n\nThey also got the <@&{self.bot_vote_role}> role for voting"
+                    " for the first time! Consider voting too if you want a cool role"
+                    " like that."
+                )
 
-        embed = ipy.Embed(
-            title="Vote Receieved", description=vote_content, color=self.bot.color
-        )
-        embed.add_field(
-            "Vote for this bot!", f"[Click here!]({vote_url.format(bot_id=bot_id)})"
-        )
-        content = f"<@{user_id}>" if got_role else None
+            embed = ipy.Embed(
+                title="Vote Receieved", description=vote_content, color=self.bot.color
+            )
+            embed.add_field(
+                "Vote for this bot!", f"[Click here!]({vote_url.format(bot_id=bot_id)})"
+            )
+            content = f"<@{user_id}>" if got_role else None
 
-        await self.bot_vote_channel.send(content=content, embeds=embed)
-
-        return web.Response(status=200)
+            await self.bot_vote_channel.send(content=content, embeds=embed)
+        except Exception as e:
+            await utils.error_handle(self.bot, e)
 
 
 def setup(bot: utils.AGBotBase) -> None:
