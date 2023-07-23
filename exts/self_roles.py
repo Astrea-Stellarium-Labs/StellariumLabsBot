@@ -101,9 +101,14 @@ class SelfRoles(utils.Extension):
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
     )
     async def edit_pronoun_message(self, ctx: ipy.ContextMenuContext):
-        await ctx.defer(edit_origin=True)
         target: ipy.Message = ctx.target  # type: ignore
+
+        if int(target._author_id) != int(self.bot.user.id):
+            await ctx.send("You can only edit messages sent by me.", ephemeral=True)
+            return
+
         await target.edit(embed=self.pronoun_embed, components=self.pronoun_select)
+        await ctx.send("Edited message.", ephemeral=True)
 
     @prefixed.prefixed_command()
     @utils.proper_permissions()
@@ -119,11 +124,16 @@ class SelfRoles(utils.Extension):
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
     )
     async def edit_other_roles_message(self, ctx: ipy.ContextMenuContext):
-        await ctx.defer(edit_origin=True)
         target: ipy.Message = ctx.target  # type: ignore
+
+        if int(target._author_id) != int(self.bot.user.id):
+            await ctx.send("You can only edit messages sent by me.", ephemeral=True)
+            return
+
         await target.edit(
             embed=self.other_roles_embed, components=self.other_roles_components
         )
+        await ctx.send("Edited message.", ephemeral=True)
 
     @prefixed.prefixed_command()
     @utils.proper_permissions()
@@ -139,11 +149,16 @@ class SelfRoles(utils.Extension):
         default_member_permissions=ipy.Permissions.MANAGE_GUILD,
     )
     async def edit_verification_message(self, ctx: ipy.ContextMenuContext):
-        await ctx.defer(edit_origin=True)
         target: ipy.Message = ctx.target  # type: ignore
+
+        if int(target._author_id) != int(self.bot.user.id):
+            await ctx.send("You can only edit messages sent by me.", ephemeral=True)
+            return
+
         await target.edit(
             embed=self.verification_embed, components=self.verification_button
         )
+        await ctx.send("Edited message.", ephemeral=True)
 
     @staticmethod
     async def process_select(
