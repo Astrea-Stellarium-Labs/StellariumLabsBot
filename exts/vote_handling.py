@@ -13,9 +13,9 @@ TWELVE_HOURS = int(datetime.timedelta(hours=12).total_seconds())
 
 
 class VoteHandling(ipy.Extension):
-    def __init__(self, bot: utils.AGBotBase):
+    def __init__(self, bot: utils.SLBotBase):
         self.name = "Vote Handling"
-        self.bot: utils.AGBotBase = bot
+        self.bot: utils.SLBotBase = bot
         self.bot_vote_channel: ipy.GuildText = None  # type: ignore
         self.runner: web.AppRunner = None  # type: ignore
         self.bot_vote_role: int = 1122748827649192027
@@ -151,6 +151,6 @@ class VoteHandling(ipy.Extension):
             await utils.error_handle(self.bot, e)
 
 
-def setup(bot: utils.AGBotBase) -> None:
+def setup(bot: utils.SLBotBase) -> None:
     importlib.reload(utils)
     VoteHandling(bot)

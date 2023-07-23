@@ -1,8 +1,6 @@
 import asyncio
-import collections
 import contextlib
 import io
-import logging
 import platform
 import textwrap
 import traceback
@@ -16,12 +14,10 @@ from interactions.ext.debug_extension.utils import get_cache_state
 
 import common.utils as utils
 
-log = logging.getLogger("agbot")
-
 
 class OwnerCMDs(ipy.Extension):
-    def __init__(self, bot: utils.AGBotBase) -> None:
-        self.bot: utils.AGBotBase = bot
+    def __init__(self, bot: utils.SLBotBase) -> None:
+        self.bot: utils.SLBotBase = bot
         self.name = "Owner"
 
         self.set_extension_error(self.ext_error)

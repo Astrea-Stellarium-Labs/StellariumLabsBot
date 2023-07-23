@@ -25,9 +25,9 @@ otherwise, you can do it through the Realms Playerlist Premium dashboard: https:
 
 
 class RealmsPremiumWatch(utils.Extension):
-    def __init__(self, bot: utils.AGBotBase):
+    def __init__(self, bot: utils.SLBotBase):
         self.name = "Realms Playerlist Premium Watch"
-        self.bot: utils.AGBotBase = bot
+        self.bot: utils.SLBotBase = bot
         self.premium_role: ipy.Role = None  # type: ignore
         self.supporter_role: ipy.Role = None  # type: ignore
 

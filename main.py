@@ -14,7 +14,7 @@ import common.utils as utils
 load_dotenv()
 
 
-logger = logging.getLogger("agbot")
+logger = logging.getLogger("slbot")
 logger.setLevel(logging.INFO)
 handler = logging.FileHandler(
     filename=os.environ["LOG_FILE_PATH"], encoding="utf-8", mode="a"
@@ -25,7 +25,7 @@ handler.setFormatter(
 logger.addHandler(handler)
 
 
-class AGBot(utils.AGBotBase):
+class SLBot(utils.SLBotBase):
     @ipy.listen("startup")
     async def on_startup(self):
         self.guild = self.get_guild(775912554928144384)  # type: ignore
@@ -78,7 +78,7 @@ class AGBot(utils.AGBotBase):
 intents = ipy.Intents.ALL
 mentions = ipy.AllowedMentions.all()
 
-bot = AGBot(
+bot = SLBot(
     allowed_mentions=mentions,
     intents=intents,
     sync_interactions=False,

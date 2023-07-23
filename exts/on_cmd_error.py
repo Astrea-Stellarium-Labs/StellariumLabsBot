@@ -9,8 +9,8 @@ import common.utils as utils
 
 
 class OnCMDError(ipy.Extension):
-    def __init__(self, bot: utils.AGBotBase) -> None:
-        self.bot: utils.AGBotBase = bot
+    def __init__(self, bot: utils.SLBotBase) -> None:
+        self.bot: utils.SLBotBase = bot
 
     @ipy.listen(disable_default_listeners=True)
     async def on_command_error(
@@ -44,6 +44,6 @@ class OnCMDError(ipy.Extension):
             await utils.error_handle(self.bot, event.error, ctx=event.ctx)
 
 
-def setup(bot: utils.AGBotBase) -> None:
+def setup(bot: utils.SLBotBase) -> None:
     importlib.reload(utils)
     OnCMDError(bot)

@@ -12,9 +12,9 @@ IPY_VERSION = _v("discord-py-interactions")
 
 
 class OtherCMDs(utils.Extension):
-    def __init__(self, bot: utils.AGBotBase):
+    def __init__(self, bot: utils.SLBotBase):
         self.name = "General"
-        self.bot: utils.AGBotBase = bot
+        self.bot: utils.SLBotBase = bot
         self.invite_link = ""
 
         asyncio.create_task(self.when_ready())

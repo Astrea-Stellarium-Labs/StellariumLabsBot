@@ -40,7 +40,7 @@ async def error_handle(bot: ipy.Client, error: Exception, ctx: ipy.BaseContext =
         split = True
     else:
         error_str = error_format(error)
-        logging.getLogger("agbot").error(error_str)
+        logging.getLogger("slbot").error(error_str)
 
         chunks = line_split(error_str)
         for i in range(len(chunks)):
@@ -212,7 +212,7 @@ class Extension(ipy.Extension):
         return new_cls
 
 
-class AGBotBase(prefixed.PrefixedInjectedClient):
+class SLBotBase(prefixed.PrefixedInjectedClient):
     if typing.TYPE_CHECKING:
         init_load: bool
         color: ipy.Color
