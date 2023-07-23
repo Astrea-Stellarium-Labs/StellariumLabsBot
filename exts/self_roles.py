@@ -26,7 +26,7 @@ class SelfRoles(utils.Extension):
                 ipy.StringSelectOption(label=k, value=f"pronoun:{v}|{k}")
                 for k, v in self.pronoun_roles.items()
             ),
-            custom_id="pronounselect",
+            custom_id="slpronounselect",
             placeholder="Select your pronouns!",
             min_values=0,
             max_values=len(self.pronoun_roles),
@@ -140,7 +140,7 @@ class SelfRoles(utils.Extension):
             await member.edit(roles=list(member_roles))
             await ctx.send(f"{remove_text} removed.", ephemeral=True)
 
-    @ipy.component_callback("pronounselect")
+    @ipy.component_callback("slpronounselect")
     async def component_handle(self, ctx: ipy.ComponentContext):
         await self.process_select(
             ctx,
