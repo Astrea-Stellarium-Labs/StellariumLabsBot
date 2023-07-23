@@ -42,7 +42,7 @@ class SelfRoles(utils.Extension):
             ipy.Button(
                 style=ipy.ButtonStyle.GRAY,
                 label="GitHub Log Viewer",
-                emoji="�",
+                emoji="📃",
                 custom_id="rolebutton|1131832642476724255",
             ),
         ]
