@@ -9,7 +9,7 @@ import common.utils as utils
 class SelfRoles(utils.Extension):
     def __init__(self, bot):
         self.bot: utils.SLBotBase = bot
-        self.name = "Self-Role"
+        self.name = "Self Roles"
 
         self.pronoun_roles = {
             "She/Her": 993731445308805180,
@@ -55,7 +55,7 @@ class SelfRoles(utils.Extension):
         )
 
         self.verify_channel = ipy.GuildText(
-            self.bot, 1132483624726429696, type=ipy.ChannelType.GUILD_TEXT
+            client=self.bot, id=1132483624726429696, type=ipy.ChannelType.GUILD_TEXT  # type: ignore
         )
 
     @prefixed.prefixed_command()
