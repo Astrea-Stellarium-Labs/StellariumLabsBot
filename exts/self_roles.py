@@ -58,10 +58,9 @@ class SelfRoles(utils.Extension):
             client=self.bot, id=1132483624726429696, type=ipy.ChannelType.GUILD_TEXT  # type: ignore
         )
 
-    @prefixed.prefixed_command()
-    @utils.proper_permissions()
-    async def send_pronoun_select(self, ctx: prefixed.PrefixedContext):
-        embed = ipy.Embed(
+    @property
+    def pronoun_embed(self):
+        return ipy.Embed(
             title="Pronouns",
             description=(
                 "Select the pronouns you wish to have. They will appear in your profile"
@@ -71,25 +70,17 @@ class SelfRoles(utils.Extension):
             color=self.bot.color,
         )
 
-        await ctx.send(embed=embed, components=self.pronoun_select)
-        await ctx.message.delete()
-
-    @prefixed.prefixed_command()
-    @utils.proper_permissions()
-    async def send_other_roles(self, ctx: prefixed.PrefixedContext):
-        embed = ipy.Embed(
+    @property
+    def other_roles_embed(self):
+        return ipy.Embed(
             title="Other Roles",
             description="Select any other roles you wish to have.",
             color=self.bot.color,
         )
 
-        await ctx.send(embed=embed, components=self.other_roles_components)
-        await ctx.message.delete()
-
-    @prefixed.prefixed_command()
-    @utils.proper_permissions()
-    async def send_verification(self, ctx: prefixed.PrefixedContext):
-        embed = ipy.Embed(
+    @property
+    def verification_embed(self):
+        return ipy.Embed(
             title="Verification",
             description=(
                 "Click the button below to verify yourself. This will give you access"
@@ -98,8 +89,61 @@ class SelfRoles(utils.Extension):
             color=self.bot.color,
         )
 
-        await ctx.send(embed=embed, components=self.verification_button)
+    @prefixed.prefixed_command()
+    @utils.proper_permissions()
+    async def send_pronoun_select(self, ctx: prefixed.PrefixedContext):
+        await ctx.send(embed=self.pronoun_embed, components=self.pronoun_select)
         await ctx.message.delete()
+
+    @ipy.context_menu(
+        "Edit Pronoun Message",
+        context_type=ipy.CommandType.MESSAGE,
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+    )
+    async def edit_pronoun_message(self, ctx: ipy.ContextMenuContext):
+        await ctx.defer(edit_origin=True)
+        target: ipy.Message = ctx.target  # type: ignore
+        await target.edit(embed=self.pronoun_embed, components=self.pronoun_select)
+
+    @prefixed.prefixed_command()
+    @utils.proper_permissions()
+    async def send_other_roles(self, ctx: prefixed.PrefixedContext):
+        await ctx.send(
+            embed=self.other_roles_embed, components=self.other_roles_components
+        )
+        await ctx.message.delete()
+
+    @ipy.context_menu(
+        "Edit Other Roles Message",
+        context_type=ipy.CommandType.MESSAGE,
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+    )
+    async def edit_other_roles_message(self, ctx: ipy.ContextMenuContext):
+        await ctx.defer(edit_origin=True)
+        target: ipy.Message = ctx.target  # type: ignore
+        await target.edit(
+            embed=self.other_roles_embed, components=self.other_roles_components
+        )
+
+    @prefixed.prefixed_command()
+    @utils.proper_permissions()
+    async def send_verification(self, ctx: prefixed.PrefixedContext):
+        await ctx.send(
+            embed=self.verification_embed, components=self.verification_button
+        )
+        await ctx.message.delete()
+
+    @ipy.context_menu(
+        "Edit Verification Message",
+        context_type=ipy.CommandType.MESSAGE,
+        default_member_permissions=ipy.Permissions.MANAGE_GUILD,
+    )
+    async def edit_verification_message(self, ctx: ipy.ContextMenuContext):
+        await ctx.defer(edit_origin=True)
+        target: ipy.Message = ctx.target  # type: ignore
+        await target.edit(
+            embed=self.verification_embed, components=self.verification_button
+        )
 
     @staticmethod
     async def process_select(
