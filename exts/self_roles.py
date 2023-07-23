@@ -192,6 +192,10 @@ class SelfRoles(utils.Extension):
                 member_roles.add(role)
                 add_list.append(f"`{name}`")
 
+            if member_roles == {int(r) for r in member._role_ids}:
+                await ctx.send("You already have all of these roles.", ephemeral=True)
+                return
+
             await member.edit(roles=list(member_roles))
             await ctx.send(f"New {add_text}: {', '.join(add_list)}.", ephemeral=True)
 
