@@ -17,10 +17,11 @@ code but have the Premium Supporter role. It seems like you were caught in the c
 - Did you mean to actually get your code and used Ko-Fi? Please follow this Ko-Fi guide on how to re-get it: \
 https://help.ko-fi.com/hc/en-us/articles/8664701197073-How-Do-I-Join-a-Creator-s-Discord-Server-#my-role-appears-on-the-creator-s-page-but-is-not-assigned--0-2 - \
 from there, make sure to go to <#1029164782617632768> and open a ticket, as *you will not get the code otherwise.*
+  - If you used Stripe, you should have gotten the code when you purchased Premium. If you somehow didn't, please email discord@astrea.cc or DM astreatss on Discord right away.
 - Want to cancel your subscription? If you use Ko-Fi, they has a guide for that here: https://help.ko-fi.com/hc/en-us/articles/360007556993-How-Do-I-Cancel-a-Subscription-to-a-Creator- - \
 otherwise, you can do it through the Realms Playerlist Premium dashboard: https://rpldash.astrea.cc/premium/.
-- Using Ko-Fi and want to use a different method to get Premium? A new, simplified version of getting Premium is currently being tested out \
-- *cancel your Premium as above*, but then follow the "New Method" steps as seen here: https://rpl.astrea.cc/wiki/premium.html#how-to-get-playerlist-premium
+- Using Ko-Fi and want to use a different method to get Premium? A new, simplified version of getting Premium is now in use: \
+- *cancel your Premium as above*, but then follow the steps as seen here: https://rpl.astrea.cc/wiki/premium.html
 """.strip()
 
 
@@ -83,20 +84,6 @@ class RealmsPremiumWatch(utils.Extension):
                     config.live_online_channel = None
                     await config.save()
                 await code.delete()
-
-        elif not event.before.has_role(self.premium_role) and event.after.has_role(
-            self.premium_role
-        ):
-            if not await models.PremiumCode.exists(
-                user_id=int(event.before.id),
-            ):
-                with contextlib.suppress(ipy.errors.HTTPException):
-                    await event.after.send(
-                        "Hey! Thank you for donating and getting Realms Playerlist"
-                        " Premium!\n\nTo get your Premium code, check out"
-                        " <#1029164782617632768> and open a ticket. Astrea will be able"
-                        " to give your code from there."
-                    )
 
     @ipy.listen()
     async def on_member_add(self, event: ipy.events.MemberAdd):
