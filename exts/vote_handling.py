@@ -139,7 +139,7 @@ class VoteHandling(ipy.Extension):
                 )
 
             embed = ipy.Embed(
-                title="Vote Receieved", description=vote_content, color=self.bot.color
+                title="Vote Received", description=vote_content, color=self.bot.color
             )
             embed.add_field(
                 "Vote for this bot!", f"[Click here!]({vote_url.format(bot_id=bot_id)})"
