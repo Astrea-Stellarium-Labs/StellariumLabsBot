@@ -5,5 +5,5 @@ asyncpg==0.28.0
 tortoise-orm[accel]==0.19.3
 redis[hiredis]==4.6.0
 types-redis>=4.4,<4.7
-orjson==3.9.4
+orjson==3.9.10
 uvloop==0.17.0; platform_system == "Linux"
