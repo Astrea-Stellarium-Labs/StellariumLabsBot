@@ -33,7 +33,6 @@ class VoteHandling(ipy.Extension):
         app = web.Application()
         app.add_routes([web.post("/topgg", self.topgg_handling)])
         app.add_routes([web.post("/dbl_rpl", self.dbl_handling)])
-        app.add_routes([web.post("/discordscom", self.discords_com_handler)])
         self.runner = web.AppRunner(app)
         await self.runner.setup()
         site = web.TCPSite(self.runner, "127.0.0.1", 8000)
@@ -83,28 +82,6 @@ class VoteHandling(ipy.Extension):
                 725483868777611275,
                 "Discord Bot List",
                 "https://discordbotlist.com/bots/realms-playerlist-bot",
-            )
-        )
-
-        return web.Response(status=200)
-
-    async def discords_com_handler(self, request: web.Request):
-        authorization = request.headers.get("Authorization")
-        if not authorization or authorization != os.environ["DISCORDSCOM_AUTH"]:
-            return web.Response(status=401)
-
-        vote_data = await request.json(loads=orjson.loads)
-        user_id = int(vote_data["user"])
-        maybe_bot_id = vote_data["bot"]
-        bot_id = int(maybe_bot_id) if maybe_bot_id.isdigit() else 725483868777611275
-
-        _ = asyncio.create_task(
-            self.handle_vote(
-                f"<@{user_id}>",
-                user_id,
-                bot_id,
-                "Discords.com",
-                "https://discords.com/bots/bot/{bot_id}",
             )
         )
 
