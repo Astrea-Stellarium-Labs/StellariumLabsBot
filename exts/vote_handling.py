@@ -75,7 +75,12 @@ class VoteHandling(ipy.Extension):
 
         vote_data = await request.json(loads=orjson.loads)
         user_id = int(vote_data["id"])
+
         _ = asyncio.create_task(
+            self.bot.redis.setex(f"rpl-voted-{user_id}", TWELVE_HOURS, "1")
+        )
+
+        __ = asyncio.create_task(
             self.handle_vote(
                 f"<@{user_id}> (**@{vote_data['username']})**",
                 user_id,
