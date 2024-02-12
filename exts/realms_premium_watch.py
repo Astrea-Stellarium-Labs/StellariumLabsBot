@@ -58,8 +58,8 @@ class RealmsPremiumWatch(utils.Extension):
         for member in self.premium_role.members:
             if member.id not in synced_member_ids and member.joined_at < filter_time:
                 await member.remove_role(self.premium_role)
-                with contextlib.suppress(ipy.errors.HTTPException):
-                    await member.send(PREMIUM_REMOVE_MESSAGE)
+                # with contextlib.suppress(ipy.errors.HTTPException):
+                #     await member.send(PREMIUM_REMOVE_MESSAGE)
 
     @ipy.listen()
     async def on_member_update(self, event: ipy.events.MemberUpdate):
