@@ -32,7 +32,8 @@ class VoteHandling(ipy.Extension):
 
         app = web.Application()
         app.add_routes([web.post("/topgg", self.topgg_handling)])
-        app.add_routes([web.post("/dbl_rpl", self.dbl_handling)])
+        app.add_routes([web.post("/dbl_rpl", self.dbl_handling_rpl)])
+        app.add_routes([web.post("/dbl_ui", self.dbl_handling_ui)])
         self.runner = web.AppRunner(app)
         await self.runner.setup()
         site = web.TCPSite(self.runner, "127.0.0.1", 8000)
@@ -51,7 +52,6 @@ class VoteHandling(ipy.Extension):
         bot_id = int(vote_data["bot"])
 
         if bot_id == 725483868777611275 and vote_data["type"] != "test":
-            # note: im specifically trying to encourage top.gg only votes
             _ = asyncio.create_task(
                 self.bot.redis.setex(f"rpl-voted-{user_id}", TWELVE_HOURS, "1")
             )
@@ -68,7 +68,7 @@ class VoteHandling(ipy.Extension):
 
         return web.Response(status=200)
 
-    async def dbl_handling(self, request: web.Request):
+    async def dbl_handling_rpl(self, request: web.Request):
         authorization = request.headers.get("Authorization")
         if not authorization or authorization != os.environ["DBL_AUTH"]:
             return web.Response(status=401)
@@ -87,6 +87,26 @@ class VoteHandling(ipy.Extension):
                 725483868777611275,
                 "Discord Bot List",
                 "https://discordbotlist.com/bots/realms-playerlist-bot",
+            )
+        )
+
+        return web.Response(status=200)
+
+    async def dbl_handling_ui(self, request: web.Request):
+        authorization = request.headers.get("Authorization")
+        if not authorization or authorization != os.environ["DBL_AUTH"]:
+            return web.Response(status=401)
+
+        vote_data = await request.json(loads=orjson.loads)
+        user_id = int(vote_data["id"])
+
+        _ = asyncio.create_task(
+            self.handle_vote(
+                f"<@{user_id}> (**@{vote_data['username']})**",
+                user_id,
+                843994199187914753,
+                "Discord Bot List",
+                "https://discordbotlist.com/bots/ultimate-investigator",
             )
         )
 
