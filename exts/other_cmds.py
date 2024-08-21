@@ -17,12 +17,6 @@ class OtherCMDs(utils.Extension):
         self.bot: utils.SLBotBase = bot
         self.invite_link = ""
 
-        asyncio.create_task(self.when_ready())
-
-    async def when_ready(self) -> None:
-        await self.bot.wait_until_ready()
-        self.invite_link = f"https://discord.com/api/oauth2/authorize?client_id={self.bot.owner.id}&permissions=8&scope=bot%20applications.commands"
-
     def _get_commit_hash(self):
         return (
             subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
@@ -95,7 +89,7 @@ class OtherCMDs(utils.Extension):
                     ),
                     (
                         "Commit Hash:"
-                        f" [{commit_hash}](https://github.com/AstreaTSS/AstreasGalaxyBot/commit/{commit_hash})"
+                        f" [{commit_hash}](https://github.com/Astrea-Stellarium-Labs/StellariumLabsBot/commit/{commit_hash})"
                     ),
                     (
                         "Interactions.py Version:"
@@ -108,9 +102,11 @@ class OtherCMDs(utils.Extension):
         )
 
         links = [
-            f"Invite Bot: [Link]({self.invite_link})",
             "Support Server: [Link](https://discord.gg/NSdetwGjpK)",
-            "Source Code: [Link](https://github.com/AstreaTSS/AstreasGalaxyBot)",
+            (
+                "Source Code:"
+                " [Link](https://github.com/Astrea-Stellarium-Labs/StellariumLabsBot)"
+            ),
         ]
 
         about_embed.add_field(
