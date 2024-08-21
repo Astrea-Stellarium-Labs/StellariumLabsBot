@@ -31,9 +31,13 @@ class VoteHandling(ipy.Extension):
         self.bot_vote_channel = await self.bot.fetch_channel(1122755262466498590)  # type: ignore
 
         app = web.Application()
-        app.add_routes([web.post("/topgg", self.topgg_handling)])
-        app.add_routes([web.post("/dbl_rpl", self.dbl_handling_rpl)])
-        app.add_routes([web.post("/dbl_ui", self.dbl_handling_ui)])
+        app.add_routes(
+            [
+                web.post("/topgg", self.topgg_handling),
+                web.post("/dbl_rpl", self.dbl_handling_rpl),
+                web.post("/dbl_ui", self.dbl_handling_ui),
+            ]
+        )
         self.runner = web.AppRunner(app)
         await self.runner.setup()
         site = web.TCPSite(self.runner, "127.0.0.1", 8000)
