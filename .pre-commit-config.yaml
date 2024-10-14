@@ -1,16 +1,16 @@
 repos:
 - repo: https://github.com/asottile/reorder-python-imports
-  rev: v3.10.0
+  rev: v3.14.0
   hooks:
     - id: reorder-python-imports
 - repo: https://github.com/psf/black
-  rev: 23.3.0
+  rev: 24.10.0
   hooks:
     - id: black
       args: [--target-version, py310, --preview]
       language_version: python3.10
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
+  rev: v5.0.0
   hooks:
     - id: trailing-whitespace
 ci:
