@@ -1,5 +1,3 @@
-import asyncio
-import contextlib
 import datetime
 import importlib
 
@@ -26,15 +24,15 @@ otherwise, you can do it through the Realms Playerlist Premium dashboard: https:
 
 
 class RealmsPremiumWatch(utils.Extension):
-    def __init__(self, bot: utils.SLBotBase):
+    def __init__(self, bot: utils.SLBotBase) -> None:
         self.name = "Realms Playerlist Premium Watch"
         self.bot: utils.SLBotBase = bot
         self.premium_role: ipy.Role = None  # type: ignore
         self.supporter_role: ipy.Role = None  # type: ignore
 
-        asyncio.create_task(self.async_run())
+        bot.create_task(self.async_run())
 
-    async def async_run(self):
+    async def async_run(self) -> None:
         await self.bot.fully_ready.wait()
         self.premium_role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
         self.supporter_role = await self.bot.guild.fetch_role(987447832715857961)  # type: ignore
@@ -45,7 +43,7 @@ class RealmsPremiumWatch(utils.Extension):
         return super().drop()
 
     @ipy.Task.create(ipy.IntervalTrigger(hours=12))
-    async def update_roles(self):
+    async def update_roles(self) -> None:
         filter_time = ipy.Timestamp.utcnow() - datetime.timedelta(days=3)
 
         self.premium_role: ipy.Role = await self.bot.guild.fetch_role(1007868499772846081)  # type: ignore
@@ -62,7 +60,7 @@ class RealmsPremiumWatch(utils.Extension):
                 #     await member.send(PREMIUM_REMOVE_MESSAGE)
 
     @ipy.listen()
-    async def on_member_update(self, event: ipy.events.MemberUpdate):
+    async def on_member_update(self, event: ipy.events.MemberUpdate) -> None:
         if not self.premium_role:
             return
 
@@ -86,7 +84,7 @@ class RealmsPremiumWatch(utils.Extension):
                 await code.delete()
 
     @ipy.listen()
-    async def on_member_add(self, event: ipy.events.MemberAdd):
+    async def on_member_add(self, event: ipy.events.MemberAdd) -> None:
         if not self.premium_role:
             return
 
@@ -97,7 +95,7 @@ class RealmsPremiumWatch(utils.Extension):
             await event.member.add_roles((self.premium_role, self.supporter_role))
 
     @ipy.listen()
-    async def on_member_remove(self, event: ipy.events.MemberRemove):
+    async def on_member_remove(self, event: ipy.events.MemberRemove) -> None:
         if not self.premium_role:
             return
 
@@ -119,7 +117,7 @@ class RealmsPremiumWatch(utils.Extension):
 
     @prefixed.prefixed_command(aliases=["resync-premium"])
     @ipy.check(ipy.is_owner())
-    async def resync_premium(self, ctx: prefixed.PrefixedContext):
+    async def resync_premium(self, ctx: prefixed.PrefixedContext) -> None:
         if not self.premium_role:
             return
 
@@ -146,6 +144,6 @@ class RealmsPremiumWatch(utils.Extension):
         await ctx.reply("Done!")
 
 
-def setup(bot):
+def setup(bot: utils.SLBotBase) -> None:
     importlib.reload(utils)
     RealmsPremiumWatch(bot)

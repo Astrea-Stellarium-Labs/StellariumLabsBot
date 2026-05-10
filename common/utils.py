@@ -1,5 +1,4 @@
 import asyncio
-import collections
 import logging
 import traceback
 import typing
@@ -7,8 +6,12 @@ from pathlib import Path
 
 import aiohttp
 import interactions as ipy
-import redis.asyncio as aioredis
 from interactions.ext import prefixed_commands as prefixed
+
+if typing.TYPE_CHECKING:
+    import asyncio
+
+    import redis.asyncio as aioredis
 
 
 class CustomCheckFailure(ipy.errors.BadArgument):
@@ -16,24 +19,16 @@ class CustomCheckFailure(ipy.errors.BadArgument):
     pass
 
 
-def proper_permissions():
-    async def predicate(ctx: ipy.BaseContext):
-        return (
-            ipy.Permissions.ADMINISTRATOR in ctx.author.guild_permissions
-            or ipy.Permissions.MANAGE_GUILD in ctx.author.guild_permissions
-        )
-
-    return ipy.check(predicate)
-
-
-def permissions_check(ctx: ipy.BaseContext):
+def permissions_check(ctx: ipy.BaseContext) -> bool:
     return (
         ipy.Permissions.ADMINISTRATOR in ctx.author.guild_permissions
         or ipy.Permissions.MANAGE_GUILD in ctx.author.guild_permissions
     )
 
 
-async def error_handle(bot: ipy.Client, error: Exception, ctx: ipy.BaseContext = None):
+async def error_handle(
+    bot: ipy.Client, error: Exception, ctx: ipy.BaseContext | None = None
+) -> None:
     # handles errors and sends them to owner
     if isinstance(error, aiohttp.ServerDisconnectedError):
         to_send = "Disconnected from server!"
@@ -69,7 +64,9 @@ async def error_handle(bot: ipy.Client, error: Exception, ctx: ipy.BaseContext =
             )
 
 
-async def msg_to_owner(bot: ipy.Client, content, split=True):
+async def msg_to_owner(
+    bot: ipy.Client, content: str | list[str], split: bool = True
+) -> None:
     # sends a message to the owner
     string = str(content)
 
@@ -78,7 +75,7 @@ async def msg_to_owner(bot: ipy.Client, content, split=True):
         await bot.owner.send(f"{chunk}")
 
 
-def line_split(content: str, split_by=20):
+def line_split(content: str, split_by: int = 20) -> list[list[str]]:
     content_split = content.splitlines()
     return [
         content_split[x : x + split_by] for x in range(0, len(content_split), split_by)
@@ -112,12 +109,12 @@ def embed_check(embed: ipy.Embed) -> bool:
     return True
 
 
-def deny_mentions(user):
+def deny_mentions(user: ipy.Snowflake_Type) -> ipy.AllowedMentions:
     # generates an AllowedMentions object that only pings the user specified
     return ipy.AllowedMentions(users=[user])
 
 
-def error_format(error: Exception):
+def error_format(error: Exception) -> str:
     # simple function that formats an exception
     return "".join(
         traceback.format_exception(  # type: ignore
@@ -126,23 +123,23 @@ def error_format(error: Exception):
     )
 
 
-def string_split(string):
+def string_split(string: str) -> list[str]:
     # simple function that splits a string into 1950-character parts
     return [string[i : i + 1950] for i in range(0, len(string), 1950)]
 
 
-def file_to_ext(str_path, base_path):
+def file_to_ext(str_path: str, base_path: str) -> str:
     # changes a file to an import-like string
     str_path = str_path.replace(base_path, "")
     str_path = str_path.replace("/", ".")
     return str_path.replace(".py", "")
 
 
-def get_all_extensions(str_path: str, folder="exts"):
+def get_all_extensions(str_path: str, folder: str = "exts") -> list[str]:
     # gets all extensions in a folder
-    ext_files = collections.deque()
-    loc_split = str_path.split(folder)
-    base_path = loc_split[0]
+    ext_files: list[str] = []
+    location_split = str_path.split(folder)
+    base_path = location_split[0]
 
     if base_path == str_path:
         base_path = base_path.replace("main.py", "")
@@ -162,19 +159,19 @@ def get_all_extensions(str_path: str, folder="exts"):
     return ext_files
 
 
-def toggle_friendly_str(bool_to_convert):
-    return "on" if bool_to_convert == True else "off"
+def toggle_friendly_str(bool_to_convert: bool) -> typing.Literal["on", "off"]:
+    return "on" if bool_to_convert else "off"
 
 
-def yesno_friendly_str(bool_to_convert):
-    return "yes" if bool_to_convert == True else "no"
+def yesno_friendly_str(bool_to_convert: bool) -> typing.Literal["yes", "no"]:
+    return "yes" if bool_to_convert else "no"
 
 
-def error_embed_generate(error_msg):
+def error_embed_generate(error_msg: str) -> ipy.Embed:
     return ipy.Embed(color=ipy.MaterialColors.RED, description=error_msg)
 
 
-def generate_mentions(ctx: ipy.BaseContext):
+def generate_mentions(ctx: ipy.BaseContext) -> ipy.AllowedMentions:
     # generates an AllowedMentions object that is similar to what a user can usually use
 
     permissions = ctx.channel.permissions_for(ctx.author)
@@ -188,7 +185,7 @@ def generate_mentions(ctx: ipy.BaseContext):
     return ipy.AllowedMentions(parse=["users"], roles=pingable_roles)
 
 
-def role_check(ctx: ipy.BaseContext, role: ipy.Role):
+def role_check(ctx: ipy.BaseContext, role: ipy.Role) -> bool:
     top_role = ctx.guild.me.top_role
 
     if role.position > top_role.position:
@@ -201,12 +198,14 @@ def role_check(ctx: ipy.BaseContext, role: ipy.Role):
     return True
 
 
-async def _global_checks(ctx: ipy.BaseContext):
+async def _global_checks(ctx: ipy.BaseContext) -> bool:
     return False if ctx.bot.init_load else bool(ctx.guild)
 
 
 class Extension(ipy.Extension):
-    def __new__(cls, bot: ipy.Client, *args, **kwargs):
+    def __new__(
+        cls, bot: ipy.Client, *args: typing.Any, **kwargs: typing.Any
+    ) -> "Extension":
         new_cls = super().__new__(cls, bot, *args, **kwargs)
         new_cls.add_ext_check(_global_checks)
         return new_cls
@@ -220,3 +219,6 @@ class SLBotBase(prefixed.PrefixedInjectedClient):
         redis: aioredis.Redis
         guild: ipy.Guild
         fully_ready: asyncio.Event
+        background_tasks: set[asyncio.Task]
+
+        def create_task(self, coro: typing.Coroutine) -> asyncio.Task: ...

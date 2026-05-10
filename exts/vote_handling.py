@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import importlib
 import os
@@ -13,20 +12,20 @@ TWELVE_HOURS = int(datetime.timedelta(hours=12).total_seconds())
 
 
 class VoteHandling(ipy.Extension):
-    def __init__(self, bot: utils.SLBotBase):
+    def __init__(self, bot: utils.SLBotBase) -> None:
         self.name = "Vote Handling"
         self.bot: utils.SLBotBase = bot
         self.bot_vote_channel: ipy.GuildText = None  # type: ignore
         self.runner: web.AppRunner = None  # type: ignore
         self.bot_vote_role: int = 1122748827649192027
 
-        asyncio.create_task(self.fill_topgg_info())
+        bot.create_task(self.fill_topgg_info())
 
     def drop(self) -> None:
-        asyncio.create_task(self.runner.cleanup())
+        self.bot.create_task(self.runner.cleanup())
         return super().drop()
 
-    async def fill_topgg_info(self):
+    async def fill_topgg_info(self) -> None:
         await self.bot.fully_ready.wait()
         self.bot_vote_channel = await self.bot.fetch_channel(1122755262466498590)  # type: ignore
 
@@ -46,7 +45,7 @@ class VoteHandling(ipy.Extension):
     async def topgg_handling(
         self,
         request: web.Request,
-    ):
+    ) -> web.Response:
         authorization = request.headers.get("Authorization")
         if not authorization or authorization != os.environ["TOPGG_AUTH"]:
             return web.Response(status=401)
@@ -56,11 +55,11 @@ class VoteHandling(ipy.Extension):
         bot_id = int(vote_data["bot"])
 
         if bot_id == 725483868777611275 and vote_data["type"] != "test":
-            _ = asyncio.create_task(
+            self.bot.create_task(
                 self.bot.redis.setex(f"rpl-voted-{user_id}", TWELVE_HOURS, "1")
             )
 
-        __ = asyncio.create_task(
+        self.bot.create_task(
             self.handle_vote(
                 f"<@{user_id}>",
                 user_id,
@@ -72,7 +71,7 @@ class VoteHandling(ipy.Extension):
 
         return web.Response(status=200)
 
-    async def dbl_handling_rpl(self, request: web.Request):
+    async def dbl_handling_rpl(self, request: web.Request) -> web.Response:
         authorization = request.headers.get("Authorization")
         if not authorization or authorization != os.environ["DBL_AUTH"]:
             return web.Response(status=401)
@@ -80,11 +79,11 @@ class VoteHandling(ipy.Extension):
         vote_data = await request.json(loads=orjson.loads)
         user_id = int(vote_data["id"])
 
-        _ = asyncio.create_task(
+        self.bot.create_task(
             self.bot.redis.setex(f"rpl-voted-{user_id}", TWELVE_HOURS, "1")
         )
 
-        __ = asyncio.create_task(
+        self.bot.create_task(
             self.handle_vote(
                 f"<@{user_id}> (**@{vote_data['username']})**",
                 user_id,
@@ -96,7 +95,7 @@ class VoteHandling(ipy.Extension):
 
         return web.Response(status=200)
 
-    async def dbl_handling_ui(self, request: web.Request):
+    async def dbl_handling_ui(self, request: web.Request) -> web.Response:
         authorization = request.headers.get("Authorization")
         if not authorization or authorization != os.environ["DBL_AUTH"]:
             return web.Response(status=401)
@@ -104,7 +103,7 @@ class VoteHandling(ipy.Extension):
         vote_data = await request.json(loads=orjson.loads)
         user_id = int(vote_data["id"])
 
-        _ = asyncio.create_task(
+        self.bot.create_task(
             self.handle_vote(
                 f"<@{user_id}> (**@{vote_data['username']})**",
                 user_id,
@@ -118,7 +117,7 @@ class VoteHandling(ipy.Extension):
 
     async def handle_vote(
         self, username: str, user_id: int, bot_id: int, site_name: str, vote_url: str
-    ):
+    ) -> None:
         try:
             got_role: bool = False
 

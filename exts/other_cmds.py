@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import os
 import subprocess
 import time
 from importlib.metadata import version as _v
@@ -12,19 +13,25 @@ IPY_VERSION = _v("discord-py-interactions")
 
 
 class OtherCMDs(utils.Extension):
-    def __init__(self, bot: utils.SLBotBase):
+    def __init__(self, bot: utils.SLBotBase) -> None:
         self.name = "General"
         self.bot: utils.SLBotBase = bot
         self.invite_link = ""
 
-    def _get_commit_hash(self):
-        return (
-            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-            .decode("ascii")
-            .strip()
-        )
+    def _get_commit_hash(self) -> str | None:
+        try:
+            if os.environ.get("SOURCE_COMMIT"):
+                return os.environ["SOURCE_COMMIT"][:7]
 
-    async def get_commit_hash(self):
+            return (
+                subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+                .decode("ascii")
+                .strip()
+            )
+        except Exception:  # screw it
+            return None
+
+    async def get_commit_hash(self) -> str | None:
         return await asyncio.to_thread(self._get_commit_hash)
 
     @ipy.slash_command(
@@ -54,7 +61,7 @@ class OtherCMDs(utils.Extension):
         )
 
     @ipy.slash_command("about", description="Gives information about the bot.")
-    async def about(self, ctx: ipy.InteractionContext):
+    async def about(self, ctx: ipy.InteractionContext) -> None:
         about_msg = (
             f"Hello! I'm the helper bot for **{self.bot.guild.name}**, doing various"
             " things around the server. I probably don't have anything useful for you,"
@@ -90,6 +97,8 @@ class OtherCMDs(utils.Extension):
                     (
                         "Commit Hash:"
                         f" [{commit_hash}](https://github.com/Astrea-Stellarium-Labs/StellariumLabsBot/commit/{commit_hash})"
+                        if commit_hash
+                        else "Commit Hash: N/A"
                     ),
                     (
                         "Interactions.py Version:"
@@ -119,6 +128,6 @@ class OtherCMDs(utils.Extension):
         await ctx.send(embed=about_embed)
 
 
-def setup(bot):
+def setup(bot: utils.SLBotBase) -> None:
     importlib.reload(utils)
     OtherCMDs(bot)

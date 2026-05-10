@@ -7,17 +7,18 @@ import common.utils as utils
 
 
 class HelpForum(ipy.Extension):
-    def __init__(self, bot: ipy.Client):
+    def __init__(self, bot: utils.SLBotBase) -> None:
         self.client = bot
         self.help_channel: ipy.GuildForum = None  # type: ignore
         self.solved_tag = 1040471298746359928
-        asyncio.create_task(self.fill_help_channel())
 
-    async def fill_help_channel(self):
+        bot.create_task(self.fill_help_channel())
+
+    async def fill_help_channel(self) -> None:
         await self.bot.wait_until_ready()
         self.help_channel = await self.bot.fetch_channel(1040468265002090536)  # type: ignore
 
-    def generate_tag_select(self, channel: ipy.GuildForum):
+    def generate_tag_select(self, channel: ipy.GuildForum) -> ipy.StringSelectMenu:
         tags = channel.available_tags
         options: list[ipy.StringSelectOption] = []
 
@@ -46,7 +47,7 @@ class HelpForum(ipy.Extension):
         )
 
     @ipy.listen("new_thread_create")
-    async def first_message_for_help(self, event: ipy.events.NewThreadCreate):
+    async def first_message_for_help(self, event: ipy.events.NewThreadCreate) -> None:
         thread = event.thread
         if not thread.parent_id or int(thread.parent_id) != 1040468265002090536:
             return
@@ -64,11 +65,9 @@ class HelpForum(ipy.Extension):
 
         try:
             message = await thread.send(
-                (
-                    "Thank you for using the help system! Please wait for someone to"
-                    " help you.\nOnce your issue is solved, press the button below to"
-                    " close this thread."
-                ),
+                "Thank you for using the help system! Please wait for someone to"
+                " help you.\nOnce your issue is solved, press the button below to"
+                " close this thread.",
                 components=[[select], [close_button]],
             )
         except ipy.errors.HTTPException:
@@ -77,25 +76,24 @@ class HelpForum(ipy.Extension):
             # so we're just waiting for discord to get the memo
             await asyncio.sleep(5)
             message = await thread.send(
-                (
-                    "Thank you for using the help system! Please wait for someone to"
-                    " help you.\nOnce your issue is solved, press the button below to"
-                    " close this thread."
-                ),
+                "Thank you for using the help system! Please wait for someone to"
+                " help you.\nOnce your issue is solved, press the button below to"
+                " close this thread.",
                 components=[[select], [close_button]],
             )
 
         await message.pin()
 
     @ipy.component_callback("modify_tags")
-    async def modify_tags(self, ctx: ipy.ComponentContext):
+    async def modify_tags(self, ctx: ipy.ComponentContext) -> None:
         if ctx.channel.archived:
             return await ctx.defer(edit_origin=True)
 
         if not utils.permissions_check(ctx):
-            return await ctx.send(
+            await ctx.send(
                 "You are not allowed to edit tags for this post.", ephemeral=True
             )
+            return
 
         await ctx.defer(ephemeral=True)
 
@@ -114,24 +112,23 @@ class HelpForum(ipy.Extension):
         await ctx.send("Done!", ephemeral=True)
 
     @ipy.component_callback("close_thread")  # type: ignore
-    async def close_help_thread(self, ctx: ipy.ComponentContext):
+    async def close_help_thread(self, ctx: ipy.ComponentContext) -> None:
         if ctx.channel.archived:
             return await ctx.defer(edit_origin=True)
 
         if not utils.permissions_check(ctx) and ctx.author.id != ctx.channel.owner_id:
-            return await ctx.send(
-                "You are not allowed to close this post.", ephemeral=True
-            )
+            await ctx.send("You are not allowed to close this post.", ephemeral=True)
+            return
 
         await ctx.send("Closing. Thank you for using our help system!")
 
         if self.solved_tag not in ctx.channel.applied_tags:
             await ctx.channel.edit(
-                applied_tags=[self.solved_tag] + ctx.channel.applied_tags
+                applied_tags=[self.solved_tag, *ctx.channel.applied_tags]
             )
         await ctx.channel.edit(archived=True, locked=True)
 
 
-def setup(bot):
+def setup(bot: utils.SLBotBase) -> None:
     importlib.reload(utils)
     HelpForum(bot)
