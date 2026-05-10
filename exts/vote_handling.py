@@ -39,7 +39,11 @@ class VoteHandling(ipy.Extension):
         )
         self.runner = web.AppRunner(app)
         await self.runner.setup()
-        site = web.TCPSite(self.runner, "127.0.0.1", 8000)
+        site = web.TCPSite(
+            self.runner,
+            os.environ.get("HOST", "127.0.0.1"),
+            int(os.environ.get("PORT", 8000)),
+        )
         await site.start()
 
     async def topgg_handling(
