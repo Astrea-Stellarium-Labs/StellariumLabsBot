@@ -10,6 +10,6 @@ WORKDIR /app
 RUN git config --global --add safe.directory /app
 
 RUN uv pip install --system -r requirements.txt
-EXPOSE 8080
+EXPOSE 8000
 
 CMD [ "python", "main.py" ]
